@@ -1,0 +1,258 @@
+// ─────────────────────────────────────────────────────────────
+// Surf Sales OS — Modelo de dominio
+// Estos tipos reflejan el schema de Supabase (ver /supabase/schema.sql)
+// ─────────────────────────────────────────────────────────────
+
+export type UUID = string;
+export type ISODate = string;
+
+export type UserRole = "admin" | "supervisor" | "vendedor";
+
+export type LeadStatus =
+  | "nuevo"
+  | "contactado"
+  | "en_seguimiento"
+  | "cotizado"
+  | "negociacion"
+  | "ganado"
+  | "perdido";
+
+export type Temperature = "frio" | "tibio" | "caliente";
+
+export type ProductStatus =
+  | "disponible"
+  | "reservado"
+  | "vendido"
+  | "sin_stock";
+
+export type TaskStatus = "pendiente" | "en_proceso" | "completada" | "vencida";
+export type TaskPriority = "baja" | "media" | "alta";
+
+export type QuoteStatus = "borrador" | "enviada" | "aceptada" | "rechazada";
+
+export type TemplateCategory =
+  | "primer_contacto"
+  | "seguimiento"
+  | "cotizacion"
+  | "recuperacion";
+
+export type PlanTier =
+  | "core"
+  | "growth"
+  | "automation"
+  | "ai_assist"
+  | "ai_agent";
+
+export interface Company {
+  id: UUID;
+  name: string;
+  logo_url?: string | null;
+  primary_color: string; // hex
+  secondary_color: string; // hex
+  industry: string;
+  slogan?: string | null;
+  active_plans: PlanTier[];
+  created_at: ISODate;
+}
+
+export interface User {
+  id: UUID;
+  company_id: UUID;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar_url?: string | null;
+  active: boolean;
+  created_at: ISODate;
+}
+
+export interface Client {
+  id: UUID;
+  company_id: UUID;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  company_name?: string | null;
+  city?: string | null;
+  notes?: string | null;
+  created_at: ISODate;
+}
+
+export interface Lead {
+  id: UUID;
+  company_id: UUID;
+  assigned_user_id: UUID | null;
+  client_id: UUID | null;
+  name: string;
+  phone?: string | null;
+  email?: string | null;
+  source: string;
+  status: LeadStatus;
+  temperature: Temperature;
+  product_interest?: string | null;
+  next_contact_at?: ISODate | null;
+  notes?: string | null;
+  created_at: ISODate;
+  updated_at: ISODate;
+}
+
+export type InteractionType =
+  | "llamada"
+  | "whatsapp"
+  | "email"
+  | "reunion"
+  | "nota"
+  | "cotizacion"
+  | "cambio_estado";
+
+export interface LeadInteraction {
+  id: UUID;
+  lead_id: UUID;
+  user_id: UUID;
+  type: InteractionType;
+  note: string;
+  created_at: ISODate;
+}
+
+export interface Product {
+  id: UUID;
+  company_id: UUID;
+  name: string;
+  brand: string;
+  category: string;
+  list_price: number;
+  promo_price?: number | null;
+  availability: number; // units
+  status: ProductStatus;
+  description?: string | null;
+  image_url?: string | null;
+  internal_notes?: string | null;
+  created_at: ISODate;
+}
+
+export interface Task {
+  id: UUID;
+  company_id: UUID;
+  assigned_user_id: UUID | null;
+  lead_id?: UUID | null;
+  client_id?: UUID | null;
+  title: string;
+  description?: string | null;
+  due_date: ISODate;
+  due_time?: string | null;
+  priority: TaskPriority;
+  status: TaskStatus;
+  created_at: ISODate;
+}
+
+export interface Quote {
+  id: UUID;
+  company_id: UUID;
+  lead_id?: UUID | null;
+  client_id?: UUID | null;
+  product_id?: UUID | null;
+  user_id: UUID;
+  list_price: number;
+  discount: number;
+  expenses: number;
+  final_price: number;
+  financing_summary?: string | null;
+  status: QuoteStatus;
+  created_at: ISODate;
+}
+
+export interface FinancialSimulation {
+  id: UUID;
+  company_id: UUID;
+  lead_id?: UUID | null;
+  product_id?: UUID | null;
+  price: number;
+  down_payment: number;
+  financed_amount: number;
+  term_months: number;
+  rate: number; // annual nominal rate, e.g. 0.45
+  estimated_payment: number;
+  created_at: ISODate;
+}
+
+export interface Sale {
+  id: UUID;
+  company_id: UUID;
+  lead_id?: UUID | null;
+  client_id?: UUID | null;
+  product_id?: UUID | null;
+  user_id: UUID;
+  amount: number;
+  commission_amount: number;
+  created_at: ISODate;
+}
+
+export interface Goal {
+  id: UUID;
+  company_id: UUID;
+  user_id: UUID | null; // null => team goal
+  period: string; // YYYY-MM
+  target_amount: number;
+  target_units: number;
+  created_at: ISODate;
+}
+
+export interface MessageTemplate {
+  id: UUID;
+  company_id: UUID;
+  title: string;
+  category: TemplateCategory;
+  body: string;
+  created_at: ISODate;
+}
+
+export type AutomationTrigger =
+  | "lead_creado"
+  | "lead_cotizado"
+  | "sin_respuesta"
+  | "cotizacion_aceptada"
+  | "lead_caliente";
+
+export type AutomationAction =
+  | "crear_recordatorio"
+  | "crear_tarea"
+  | "cambiar_estado"
+  | "asignar_vendedor"
+  | "notificar";
+
+export interface AutomationRule {
+  id: UUID;
+  company_id: UUID;
+  name: string;
+  trigger: AutomationTrigger;
+  action: AutomationAction;
+  active: boolean;
+  created_at: ISODate;
+}
+
+export interface AiLeadScore {
+  id: UUID;
+  lead_id: UUID;
+  score: number; // 0-100
+  classification: Temperature;
+  reasons: string[];
+  recommended_action: string;
+  created_at: ISODate;
+}
+
+export interface DataState {
+  company: Company;
+  users: User[];
+  clients: Client[];
+  leads: Lead[];
+  interactions: LeadInteraction[];
+  products: Product[];
+  tasks: Task[];
+  quotes: Quote[];
+  simulations: FinancialSimulation[];
+  sales: Sale[];
+  goals: Goal[];
+  templates: MessageTemplate[];
+  automationRules: AutomationRule[];
+  aiScores: AiLeadScore[];
+}
