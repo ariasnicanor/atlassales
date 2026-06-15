@@ -1,19 +1,29 @@
 import { useMemo, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { Plus, Search, LayoutGrid, Columns3, Flame } from "lucide-react";
+import { Plus, Search, LayoutGrid, Columns3, Flame, SlidersHorizontal, X } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
+import { Field } from "@/components/forms/Field";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+  DialogTrigger,
+  DialogClose,
+} from "@/components/ui/dialog";
 import { LeadCard } from "@/components/commercial/LeadCard";
 import { TemperatureBadge } from "@/components/commercial/StatusBadges";
 import { EmptyState } from "@/components/commercial/EmptyState";
 import { useScopedData } from "@/hooks/useScopedData";
 import { useData } from "@/data/store";
-import { LEAD_STATUS_LABEL, LEAD_STATUS_ORDER, LEAD_STATUS_ACCENT } from "@/lib/labels";
-import type { LeadStatus, Temperature } from "@/types";
+import { LEAD_STATUS_LABEL, LEAD_STATUS_ORDER, LEAD_STATUS_ACCENT, TEMPERATURE_LABEL } from "@/lib/labels";
+import type { LeadStatus } from "@/types";
 
 export default function Leads() {
   const navigate = useNavigate();
@@ -22,6 +32,7 @@ export default function Leads() {
   const { users } = useData();
 
   const [search, setSearch] = useState("");
+  const [filtersOpen, setFiltersOpen] = useState(false);
   const statusFilter = params.get("status") ?? "todos";
   const tempFilter = params.get("temp") ?? "todos";
   const sellerFilter = params.get("seller") ?? "todos";
@@ -32,6 +43,13 @@ export default function Leads() {
     else next.set(key, value);
     setParams(next, { replace: true });
   };
+
+  const clearFilters = () => setParams(new URLSearchParams(), { replace: true });
+
+  const activeCount =
+    (statusFilter !== "todos" ? 1 : 0) +
+    (tempFilter !== "todos" ? 1 : 0) +
+    (sellerFilter !== "todos" ? 1 : 0);
 
   const sellers = users.filter((u) => u.role === "vendedor");
   const sellerById = useMemo(
@@ -61,46 +79,80 @@ export default function Leads() {
         title="Leads"
         description="Tu pipeline comercial. Filtrá, seguí y no pierdas oportunidades."
         actions={
-          <Button onClick={() => navigate("/leads/new")}>
-            <Plus className="size-4" /> Nuevo lead
+          <Button onClick={() => navigate("/leads/new")} size="icon" aria-label="Nuevo lead">
+            <Plus className="size-4" />
           </Button>
         }
       />
 
-      {/* Filtros */}
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="relative">
+      {/* Búsqueda + botón de filtros (popup) */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input
-            placeholder="Buscar por nombre, teléfono..."
+            placeholder="Buscar por nombre, teléfono, producto..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-9"
           />
         </div>
-        <Select value={statusFilter} onChange={(e) => setFilter("status", e.target.value)}>
-          <option value="todos">Todos los estados</option>
-          {LEAD_STATUS_ORDER.map((s) => (
-            <option key={s} value={s}>{LEAD_STATUS_LABEL[s]}</option>
-          ))}
-        </Select>
-        <Select value={tempFilter} onChange={(e) => setFilter("temp", e.target.value)}>
-          <option value="todos">Toda temperatura</option>
-          <option value="caliente">🔥 Caliente</option>
-          <option value="tibio">🌤️ Tibio</option>
-          <option value="frio">🧊 Frío</option>
-        </Select>
-        {seeAll ? (
-          <Select value={sellerFilter} onChange={(e) => setFilter("seller", e.target.value)}>
-            <option value="todos">Todos los vendedores</option>
-            {sellers.map((s) => (
-              <option key={s.id} value={s.id}>{s.name}</option>
-            ))}
-          </Select>
-        ) : (
-          <div className="hidden lg:block" />
-        )}
+        <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="shrink-0">
+              <SlidersHorizontal className="size-4" />
+              <span className="hidden sm:inline">Filtros</span>
+              {activeCount > 0 && <Badge variant="default" className="ml-1">{activeCount}</Badge>}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader><DialogTitle>Filtros</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <Field label="Estado">
+                <Select value={statusFilter} onChange={(e) => setFilter("status", e.target.value)}>
+                  <option value="todos">Todos los estados</option>
+                  {LEAD_STATUS_ORDER.map((s) => <option key={s} value={s}>{LEAD_STATUS_LABEL[s]}</option>)}
+                </Select>
+              </Field>
+              <Field label="Temperatura">
+                <Select value={tempFilter} onChange={(e) => setFilter("temp", e.target.value)}>
+                  <option value="todos">Toda temperatura</option>
+                  <option value="caliente">🔥 Caliente</option>
+                  <option value="tibio">🌤️ Tibio</option>
+                  <option value="frio">🧊 Frío</option>
+                </Select>
+              </Field>
+              {seeAll && (
+                <Field label="Vendedor">
+                  <Select value={sellerFilter} onChange={(e) => setFilter("seller", e.target.value)}>
+                    <option value="todos">Todos los vendedores</option>
+                    {sellers.map((s) => <option key={s.id} value={s.id}>{s.name}</option>)}
+                  </Select>
+                </Field>
+              )}
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={clearFilters}>Limpiar</Button>
+              <DialogClose asChild><Button>Ver {filtered.length} resultados</Button></DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
+
+      {/* Chips de filtros activos */}
+      {activeCount > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {statusFilter !== "todos" && (
+            <Chip label={LEAD_STATUS_LABEL[statusFilter as LeadStatus]} onClear={() => setFilter("status", "todos")} />
+          )}
+          {tempFilter !== "todos" && (
+            <Chip label={TEMPERATURE_LABEL[tempFilter as keyof typeof TEMPERATURE_LABEL] ?? tempFilter} onClear={() => setFilter("temp", "todos")} />
+          )}
+          {sellerFilter !== "todos" && (
+            <Chip label={sellerById[sellerFilter]?.name ?? "Vendedor"} onClear={() => setFilter("seller", "todos")} />
+          )}
+          <button onClick={clearFilters} className="text-xs text-muted-foreground underline">Limpiar todo</button>
+        </div>
+      )}
 
       <Tabs defaultValue="list">
         <div className="flex items-center justify-between">
@@ -171,5 +223,16 @@ export default function Leads() {
         </TabsContent>
       </Tabs>
     </div>
+  );
+}
+
+function Chip({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <Badge variant="secondary" className="gap-1 pr-1">
+      {label}
+      <button onClick={onClear} className="rounded-full p-0.5 hover:bg-background/50" aria-label="Quitar filtro">
+        <X className="size-3" />
+      </button>
+    </Badge>
   );
 }

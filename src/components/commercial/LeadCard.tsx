@@ -1,13 +1,18 @@
 import { Link } from "react-router-dom";
-import { Phone, MessageCircle, ChevronRight, Clock } from "lucide-react";
+import { Phone, MessageCircle, ChevronRight, Clock, UserRound } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
 import { LeadStatusBadge, TemperatureBadge } from "./StatusBadges";
 import type { Lead, User } from "@/types";
 import { whatsappLink, telLink } from "@/lib/contact";
 import { fromNow, isOverdue } from "@/lib/date";
 import { cn } from "@/lib/utils";
+import { useData } from "@/data/store";
+import { useSession } from "@/context/session";
+import { can } from "@/lib/permissions";
+import { useToast } from "@/components/ui/toast";
 
 interface LeadCardProps {
   lead: Lead;
@@ -16,6 +21,11 @@ interface LeadCardProps {
 
 export function LeadCard({ lead, seller }: LeadCardProps) {
   const overdue = isOverdue(lead.next_contact_at);
+  const { users, updateLead } = useData();
+  const { currentUser } = useSession();
+  const { toast } = useToast();
+  const canReassign = can(currentUser, "assign_leads");
+  const sellers = users.filter((u) => u.role === "vendedor" || u.role === "supervisor");
 
   return (
     <Card className="transition-shadow hover:shadow-md">
@@ -34,8 +44,34 @@ export function LeadCard({ lead, seller }: LeadCardProps) {
         <div className="flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
           <LeadStatusBadge status={lead.status} />
           <span>· {lead.source}</span>
-          {seller && <span className="truncate">· {seller.name}</span>}
         </div>
+
+        {/* Vendedor asignado (reasignable por supervisor/admin) */}
+        {canReassign ? (
+          <div className="flex items-center gap-2">
+            <UserRound className="size-3.5 shrink-0 text-muted-foreground" />
+            <Select
+              value={lead.assigned_user_id ?? ""}
+              onChange={(e) => {
+                updateLead(lead.id, { assigned_user_id: e.target.value || null });
+                toast("Vendedor reasignado");
+              }}
+              className="h-8 text-xs"
+              aria-label="Reasignar vendedor"
+            >
+              <option value="">Sin asignar</option>
+              {sellers.map((u) => (
+                <option key={u.id} value={u.id}>{u.name}</option>
+              ))}
+            </Select>
+          </div>
+        ) : (
+          seller && (
+            <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+              <UserRound className="size-3.5" /> {seller.name}
+            </p>
+          )
+        )}
 
         {lead.next_contact_at && (
           <div className={cn("flex items-center gap-1.5 text-xs", overdue ? "text-destructive" : "text-muted-foreground")}>

@@ -36,11 +36,18 @@ export const productSchema = z.object({
   name: z.string().min(2, "El nombre es obligatorio"),
   brand: z.string().optional().or(z.literal("")),
   category: z.string().min(1, "Indicá la categoría"),
+  condition: z.enum(["nuevo", "usado"]),
+  version: z.string().optional().or(z.literal("")),
+  year: z.coerce.number().int().min(1950).max(2100).optional(),
+  mileage_km: z.coerce.number().int().min(0).optional(),
+  fuel: z.string().optional().or(z.literal("")),
+  transmission: z.string().optional().or(z.literal("")),
   list_price: z.coerce.number().min(0, "Precio inválido"),
   promo_price: z.coerce.number().min(0).optional(),
   availability: z.coerce.number().int().min(0, "Cantidad inválida"),
   status: z.enum(["disponible", "reservado", "vendido", "sin_stock"]),
   description: z.string().optional().or(z.literal("")),
+  image_url: z.string().optional().or(z.literal("")),
   internal_notes: z.string().optional().or(z.literal("")),
 });
 export type ProductFormValues = z.infer<typeof productSchema>;

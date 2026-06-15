@@ -1,5 +1,5 @@
 import { useNavigate } from "react-router-dom";
-import { Menu, Moon, Sun, Plus, LogOut, Database, RotateCcw } from "lucide-react";
+import { Moon, Sun, Plus, LogOut, Database, RotateCcw, Waves } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -8,31 +8,46 @@ import { useSession } from "@/context/session";
 import { useData } from "@/data/store";
 import { DATA_MODE } from "@/lib/supabase/client";
 import { roleLabel } from "@/lib/permissions";
+import { CreateMenu } from "./CreateMenu";
+import { NotificationsBell } from "./NotificationsBell";
 
-export function Topbar({ onMenu }: { onMenu: () => void }) {
-  const navigate = useNavigate();
+export function Topbar() {
   const { currentUser, logout, theme, toggleTheme, login } = useSession();
-  const { users, resetDemo } = useData();
+  const { users, company, resetDemo } = useData();
 
   return (
     <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
-      <Button variant="ghost" size="icon" className="lg:hidden" onClick={onMenu} aria-label="Menú">
-        <Menu className="size-5" />
-      </Button>
+      {/* Brand (solo mobile; en desktop está en el sidebar) */}
+      <div className="flex items-center gap-2 lg:hidden">
+        <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+          <Waves className="size-4" />
+        </div>
+        <span className="truncate text-sm font-semibold">{company.name}</span>
+      </div>
 
       {DATA_MODE === "mock" && (
-        <Badge variant="warning" className="hidden sm:inline-flex">
+        <Badge variant="warning" className="ml-1 hidden sm:inline-flex">
           <Database className="size-3" /> Datos demo
         </Badge>
       )}
 
-      <div className="ml-auto flex items-center gap-2">
-        <Button size="sm" onClick={() => navigate("/leads/new")} className="hidden sm:inline-flex">
-          <Plus className="size-4" /> Nuevo lead
-        </Button>
-        <Button size="icon" variant="default" onClick={() => navigate("/leads/new")} className="sm:hidden" aria-label="Nuevo lead">
-          <Plus className="size-4" />
-        </Button>
+      <div className="ml-auto flex items-center gap-1 sm:gap-2">
+        <CreateMenu
+          trigger={
+            <Button size="sm" className="hidden sm:inline-flex">
+              <Plus className="size-4" /> Crear
+            </Button>
+          }
+        />
+        <CreateMenu
+          trigger={
+            <Button size="icon" className="sm:hidden" aria-label="Crear">
+              <Plus className="size-4" />
+            </Button>
+          }
+        />
+
+        <NotificationsBell />
 
         <Button variant="ghost" size="icon" onClick={toggleTheme} aria-label="Cambiar tema">
           {theme === "light" ? <Moon className="size-5" /> : <Sun className="size-5" />}

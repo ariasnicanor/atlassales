@@ -35,13 +35,13 @@ export function StatCard({
         onClick && "cursor-pointer hover:shadow-md"
       )}
     >
-      <CardContent className="flex items-center gap-4 p-4">
-        <div className={cn("flex size-11 items-center justify-center rounded-xl", toneMap[tone])}>
+      <CardContent className="flex min-h-[88px] items-center gap-3 p-4">
+        <div className={cn("flex size-11 shrink-0 items-center justify-center rounded-xl", toneMap[tone])}>
           <Icon className="size-5" />
         </div>
-        <div className="min-w-0">
-          <p className="truncate text-sm text-muted-foreground">{label}</p>
-          <p className="text-2xl font-semibold leading-tight">{value}</p>
+        <div className="min-w-0 flex-1">
+          <p className="text-xs leading-snug text-muted-foreground line-clamp-2">{label}</p>
+          <p className="text-xl font-semibold leading-tight sm:text-2xl">{value}</p>
           {hint && <p className="truncate text-xs text-muted-foreground">{hint}</p>}
         </div>
       </CardContent>
