@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Search, Package } from "lucide-react";
+import { Plus, Search, Package, Gauge, Calendar, Fuel } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Field } from "@/components/forms/Field";
 import { Badge } from "@/components/ui/badge";
 import { ProductStatusBadge } from "@/components/commercial/StatusBadges";
+import { ProductImage } from "@/components/commercial/ProductImage";
 import { EmptyState } from "@/components/commercial/EmptyState";
 import {
   Dialog,
@@ -27,13 +28,16 @@ import { useToast } from "@/components/ui/toast";
 import { formatCurrency } from "@/lib/utils";
 import { productSchema, type ProductFormValues } from "@/lib/validators";
 
+const FUELS = ["Nafta", "Diésel", "Híbrido", "Eléctrico", "GNC"];
+const TRANSMISSIONS = ["Manual", "Automática", "CVT"];
+
 export default function Stock() {
   const { products, createProduct } = useData();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [brand, setBrand] = useState("todas");
   const [category, setCategory] = useState("todas");
-  const [avail, setAvail] = useState("todas");
+  const [condition, setCondition] = useState("todas");
   const [open, setOpen] = useState(false);
 
   const brands = Array.from(new Set(products.map((p) => p.brand).filter(Boolean)));
@@ -43,30 +47,38 @@ export default function Stock() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm<ProductFormValues>({
     resolver: zodResolver(productSchema),
-    defaultValues: { status: "disponible", availability: 1, list_price: 0 },
+    defaultValues: { status: "disponible", condition: "nuevo", availability: 1, list_price: 0 },
   });
+  const watchCondition = watch("condition");
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return products.filter((p) => {
       if (brand !== "todas" && p.brand !== brand) return false;
       if (category !== "todas" && p.category !== category) return false;
-      if (avail === "disponibles" && p.status !== "disponible") return false;
-      if (avail === "sin_stock" && p.status !== "sin_stock") return false;
-      if (q && !`${p.name} ${p.brand} ${p.category}`.toLowerCase().includes(q)) return false;
+      if (condition !== "todas" && p.condition !== condition) return false;
+      if (q && !`${p.name} ${p.brand} ${p.category} ${p.version ?? ""}`.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [products, search, brand, category, avail]);
+  }, [products, search, brand, category, condition]);
 
   const onSubmit = (values: ProductFormValues) => {
     createProduct({
       ...values,
       promo_price: values.promo_price || null,
+      year: values.year || null,
+      mileage_km: values.mileage_km || null,
+      fuel: values.fuel || null,
+      transmission: values.transmission || null,
+      version: values.version || null,
       description: values.description || null,
       internal_notes: values.internal_notes || null,
+      images: values.image_url ? [values.image_url] : [],
+      image_url: values.image_url || null,
     });
     toast("Producto creado");
     reset();
@@ -77,7 +89,7 @@ export default function Stock() {
     <div className="space-y-6">
       <PageHeader
         title="Stock / Productos"
-        description="Disponibilidad e información comercial al alcance del vendedor."
+        description="Disponibilidad e info comercial con fotos, para mostrar al cliente al instante."
         actions={
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button><Plus className="size-4" /> Nuevo producto</Button></DialogTrigger>
@@ -89,6 +101,33 @@ export default function Stock() {
                   <Field label="Marca"><Input {...register("brand")} /></Field>
                   <Field label="Categoría" required error={errors.category?.message}><Input {...register("category")} /></Field>
                 </div>
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <Field label="Condición">
+                    <Select {...register("condition")}>
+                      <option value="nuevo">0 km</option>
+                      <option value="usado">Usado</option>
+                    </Select>
+                  </Field>
+                  <Field label="Versión" hint="Ej: Exclusive 1.6 CVT"><Input {...register("version")} /></Field>
+                </div>
+                <div className="grid gap-4 sm:grid-cols-3">
+                  <Field label="Año"><Input type="number" {...register("year")} /></Field>
+                  <Field label="Combustible">
+                    <Select {...register("fuel")}>
+                      <option value="">—</option>
+                      {FUELS.map((f) => <option key={f} value={f}>{f}</option>)}
+                    </Select>
+                  </Field>
+                  <Field label="Transmisión">
+                    <Select {...register("transmission")}>
+                      <option value="">—</option>
+                      {TRANSMISSIONS.map((t) => <option key={t} value={t}>{t}</option>)}
+                    </Select>
+                  </Field>
+                </div>
+                {watchCondition === "usado" && (
+                  <Field label="Kilómetros" error={errors.mileage_km?.message}><Input type="number" {...register("mileage_km")} /></Field>
+                )}
                 <div className="grid gap-4 sm:grid-cols-2">
                   <Field label="Precio de lista" required error={errors.list_price?.message}><Input type="number" {...register("list_price")} /></Field>
                   <Field label="Precio promo"><Input type="number" {...register("promo_price")} /></Field>
@@ -104,6 +143,7 @@ export default function Stock() {
                     </Select>
                   </Field>
                 </div>
+                <Field label="Foto (URL)" hint="Pegá el link de una imagen"><Input {...register("image_url")} placeholder="https://..." /></Field>
                 <Field label="Descripción comercial"><Textarea {...register("description")} /></Field>
                 <DialogFooter>
                   <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
@@ -120,6 +160,11 @@ export default function Stock() {
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Buscar producto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
+        <Select value={condition} onChange={(e) => setCondition(e.target.value)}>
+          <option value="todas">Nuevos y usados</option>
+          <option value="nuevo">0 km</option>
+          <option value="usado">Usados</option>
+        </Select>
         <Select value={brand} onChange={(e) => setBrand(e.target.value)}>
           <option value="todas">Todas las marcas</option>
           {brands.map((b) => <option key={b} value={b}>{b}</option>)}
@@ -128,45 +173,65 @@ export default function Stock() {
           <option value="todas">Todas las categorías</option>
           {categories.map((c) => <option key={c} value={c}>{c}</option>)}
         </Select>
-        <Select value={avail} onChange={(e) => setAvail(e.target.value)}>
-          <option value="todas">Toda disponibilidad</option>
-          <option value="disponibles">Solo disponibles</option>
-          <option value="sin_stock">Sin stock</option>
-        </Select>
       </div>
 
       {filtered.length === 0 ? (
         <EmptyState icon={Package} title="No hay productos" description="Ajustá los filtros o cargá un producto nuevo." />
       ) : (
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {filtered.map((p) => (
-            <Link key={p.id} to={`/stock/${p.id}`}>
-              <Card className="h-full transition-shadow hover:shadow-md">
-                <CardContent className="space-y-3 p-4">
-                  <div className="flex items-start justify-between gap-2">
-                    <div className="min-w-0">
-                      <p className="truncate font-medium">{p.name}</p>
-                      <p className="text-sm text-muted-foreground">{p.brand} · {p.category}</p>
+          {filtered.map((p) => {
+            const isVehicle = ["Pickups", "SUV", "Autos", "Utilitarios"].includes(p.category) || Boolean(p.year);
+            return (
+              <Link key={p.id} to={`/stock/${p.id}`}>
+                <Card className="h-full overflow-hidden transition-shadow hover:shadow-md">
+                  {/* Foto con badges superpuestos */}
+                  <div className="relative">
+                    <ProductImage src={p.image_url ?? p.images[0]} alt={p.name} className="h-44 w-full" />
+                    <div className="absolute left-2 top-2">
+                      <Badge variant={p.condition === "nuevo" ? "default" : "secondary"}>
+                        {p.condition === "nuevo" ? "0 km" : "Usado"}
+                      </Badge>
                     </div>
-                    <ProductStatusBadge status={p.status} />
+                    <div className="absolute right-2 top-2">
+                      <ProductStatusBadge status={p.status} />
+                    </div>
                   </div>
-                  <div className="flex items-end justify-between">
+
+                  <CardContent className="space-y-2 p-4">
                     <div>
-                      {p.promo_price ? (
-                        <>
-                          <p className="text-xs text-muted-foreground line-through">{formatCurrency(p.list_price)}</p>
-                          <p className="text-lg font-semibold text-success">{formatCurrency(p.promo_price)}</p>
-                        </>
-                      ) : (
-                        <p className="text-lg font-semibold">{formatCurrency(p.list_price)}</p>
-                      )}
+                      <p className="truncate font-medium leading-tight">{p.name}</p>
+                      <p className="truncate text-xs text-muted-foreground">{p.version ?? `${p.brand} · ${p.category}`}</p>
                     </div>
-                    <Badge variant="muted">{p.availability} u.</Badge>
-                  </div>
-                </CardContent>
-              </Card>
-            </Link>
-          ))}
+
+                    {/* Detalles rápidos (vehículos) */}
+                    {isVehicle && (
+                      <div className="flex flex-wrap gap-x-3 gap-y-1 text-xs text-muted-foreground">
+                        {p.year && <span className="flex items-center gap-1"><Calendar className="size-3.5" /> {p.year}</span>}
+                        {p.condition === "usado" && p.mileage_km != null && (
+                          <span className="flex items-center gap-1"><Gauge className="size-3.5" /> {p.mileage_km.toLocaleString("es-AR")} km</span>
+                        )}
+                        {p.fuel && <span className="flex items-center gap-1"><Fuel className="size-3.5" /> {p.fuel}</span>}
+                      </div>
+                    )}
+
+                    <div className="flex items-end justify-between pt-1">
+                      <div>
+                        {p.promo_price ? (
+                          <>
+                            <p className="text-xs text-muted-foreground line-through">{formatCurrency(p.list_price)}</p>
+                            <p className="text-lg font-semibold text-success">{formatCurrency(p.promo_price)}</p>
+                          </>
+                        ) : (
+                          <p className="text-lg font-semibold">{formatCurrency(p.list_price)}</p>
+                        )}
+                      </div>
+                      <Badge variant="muted">{p.availability} u.</Badge>
+                    </div>
+                  </CardContent>
+                </Card>
+              </Link>
+            );
+          })}
         </div>
       )}
     </div>

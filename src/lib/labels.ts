@@ -1,6 +1,7 @@
 import type {
   LeadStatus,
   ProductStatus,
+  ProductCondition,
   QuoteStatus,
   TaskPriority,
   TaskStatus,
@@ -57,6 +58,11 @@ export const PRODUCT_STATUS_LABEL: Record<ProductStatus, string> = {
   reservado: "Reservado",
   vendido: "Vendido",
   sin_stock: "Sin stock",
+};
+
+export const PRODUCT_CONDITION_LABEL: Record<ProductCondition, string> = {
+  nuevo: "0 km",
+  usado: "Usado",
 };
 
 export const TASK_STATUS_LABEL: Record<TaskStatus, string> = {

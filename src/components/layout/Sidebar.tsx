@@ -1,14 +1,23 @@
 import { NavLink, Link } from "react-router-dom";
 import { Lock, Waves, Sparkles } from "lucide-react";
-import { NAV_SECTIONS } from "@/lib/nav";
+import { PRIMARY_NAV, MORE_GROUPS, itemAllowed, type NavItem } from "@/lib/nav";
 import { useData } from "@/data/store";
 import { usePlan } from "@/hooks/usePlan";
+import { useSession } from "@/context/session";
 import { cn } from "@/lib/utils";
-import { Badge } from "@/components/ui/badge";
 
 export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { company } = useData();
   const { hasModule } = usePlan();
+  const { currentUser } = useSession();
+
+  const sections: { title: string; items: NavItem[] }[] = [
+    { title: "Core", items: PRIMARY_NAV },
+    ...MORE_GROUPS.map((g) => ({
+      title: g.title,
+      items: g.items.filter((i) => itemAllowed(i, currentUser?.role)),
+    })),
+  ].filter((s) => s.items.length > 0);
 
   return (
     <div className="flex h-full flex-col bg-card">
@@ -25,7 +34,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
 
       {/* Nav */}
       <nav className="flex-1 space-y-5 overflow-y-auto scrollbar-thin px-3 py-4">
-        {NAV_SECTIONS.map((section) => (
+        {sections.map((section) => (
           <div key={section.title}>
             <p className="px-3 pb-2 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
               {section.title}

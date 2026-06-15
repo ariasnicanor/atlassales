@@ -25,6 +25,8 @@ export type ProductStatus =
   | "vendido"
   | "sin_stock";
 
+export type ProductCondition = "nuevo" | "usado";
+
 export type TaskStatus = "pendiente" | "en_proceso" | "completada" | "vencida";
 export type TaskPriority = "baja" | "media" | "alta";
 
@@ -60,6 +62,7 @@ export interface User {
   company_id: UUID;
   name: string;
   email: string;
+  phone?: string | null;
   role: UserRole;
   avatar_url?: string | null;
   active: boolean;
@@ -120,12 +123,19 @@ export interface Product {
   name: string;
   brand: string;
   category: string;
+  condition: ProductCondition; // nuevo | usado
+  version?: string | null; // ej: "Exclusive 1.6 CVT"
+  year?: number | null;
+  mileage_km?: number | null; // para usados
+  fuel?: string | null; // Nafta, Diésel, Híbrido, Eléctrico
+  transmission?: string | null; // Manual, Automática, CVT
   list_price: number;
   promo_price?: number | null;
   availability: number; // units
   status: ProductStatus;
   description?: string | null;
-  image_url?: string | null;
+  images: string[]; // galería de fotos
+  image_url?: string | null; // legacy / portada
   internal_notes?: string | null;
   created_at: ISODate;
 }

@@ -1,8 +1,8 @@
 import { useMemo, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, CheckSquare, CheckCircle2, Circle, AlertTriangle, CalendarDays, Clock } from "lucide-react";
+import { Plus, CheckSquare, CheckCircle2, Circle, AlertTriangle, CalendarDays, Clock, LayoutList, Columns3 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -11,6 +11,7 @@ import { Select } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Field } from "@/components/forms/Field";
+import { Tabs, TabsList, TabsTrigger, TabsContent } from "@/components/ui/tabs";
 import { EmptyState } from "@/components/commercial/EmptyState";
 import {
   Dialog,
@@ -38,12 +39,21 @@ const priorityVariant: Record<TaskPriority, "muted" | "warning" | "destructive">
 };
 
 export default function Tasks() {
-  const { leads, toggleTaskComplete, createTask } = useData();
+  const { leads, toggleTaskComplete, createTask, users } = useData();
   const { tasks, seeAll } = useScopedData();
   const { currentUser } = useSession();
-  const { users } = useData();
   const { toast } = useToast();
-  const [open, setOpen] = useState(false);
+  const [params, setParams] = useSearchParams();
+  const [open, setOpen] = useState(params.get("nueva") === "1");
+
+  const handleOpenChange = (v: boolean) => {
+    setOpen(v);
+    if (!v && params.get("nueva")) {
+      const next = new URLSearchParams(params);
+      next.delete("nueva");
+      setParams(next, { replace: true });
+    }
+  };
 
   const {
     register,
@@ -81,10 +91,8 @@ export default function Tasks() {
     });
     toast("Tarea creada");
     reset();
-    setOpen(false);
+    handleOpenChange(false);
   };
-
-  const sellers = users.filter((u) => u.role !== "admin" || true);
 
   const TaskItem = ({ t }: { t: Task }) => {
     const lead = leads.find((l) => l.id === t.lead_id);
@@ -126,13 +134,53 @@ export default function Tasks() {
     </Card>
   );
 
+  // Tarjeta compacta para kanban
+  const KanbanCard = ({ t }: { t: Task }) => {
+    const lead = leads.find((l) => l.id === t.lead_id);
+    const done = t.status === "completada";
+    return (
+      <div className="rounded-lg border bg-card p-3">
+        <div className="flex items-start gap-2">
+          <button onClick={() => toggleTaskComplete(t.id)} className="mt-0.5" aria-label="Completar tarea">
+            {done ? <CheckCircle2 className="size-4 text-success" /> : <Circle className="size-4 text-muted-foreground hover:text-primary" />}
+          </button>
+          <p className={cn("flex-1 text-sm font-medium", done && "text-muted-foreground line-through")}>{t.title}</p>
+        </div>
+        <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
+          <span className="flex items-center gap-1"><CalendarDays className="size-3" /> {fmtDate(t.due_date)}</span>
+          <Badge variant={priorityVariant[t.priority]}>{TASK_PRIORITY_LABEL[t.priority]}</Badge>
+        </div>
+        {lead && <Link to={`/leads/${lead.id}`} className="mt-1 block truncate text-xs text-primary hover:underline">{lead.name}</Link>}
+      </div>
+    );
+  };
+
+  const KanbanCol = ({ title, items, tone }: { title: string; items: Task[]; tone: string }) => (
+    <div className="w-72 shrink-0">
+      <div className="mb-2 flex items-center gap-2">
+        <span className={`size-2.5 rounded-full ${tone}`} />
+        <p className="text-sm font-medium">{title}</p>
+        <Badge variant="muted" className="ml-auto">{items.length}</Badge>
+      </div>
+      <div className="space-y-2 rounded-xl bg-muted/40 p-2">
+        {items.length === 0 ? (
+          <p className="px-2 py-6 text-center text-xs text-muted-foreground">Sin tareas</p>
+        ) : (
+          items.map((t) => <KanbanCard key={t.id} t={t} />)
+        )}
+      </div>
+    </div>
+  );
+
+  const sellers = users;
+
   return (
     <div className="space-y-6">
       <PageHeader
         title="Tareas"
         description="Tu agenda de seguimiento comercial. No se te escapa nada."
         actions={
-          <Dialog open={open} onOpenChange={setOpen}>
+          <Dialog open={open} onOpenChange={handleOpenChange}>
             <DialogTrigger asChild><Button><Plus className="size-4" /> Nueva tarea</Button></DialogTrigger>
             <DialogContent>
               <DialogHeader><DialogTitle>Nueva tarea</DialogTitle></DialogHeader>
@@ -178,12 +226,32 @@ export default function Tasks() {
       {tasks.length === 0 ? (
         <EmptyState icon={CheckSquare} title="No tenés tareas" description="Creá tu primera tarea de seguimiento." />
       ) : (
-        <div className="grid gap-6 lg:grid-cols-2">
-          <Section title="Vencidas" icon={AlertTriangle} items={groups.vencidas} tone="text-destructive" />
-          <Section title="Para hoy" icon={Clock} items={groups.hoy} tone="text-warning" />
-          <Section title="Próximas" icon={CalendarDays} items={groups.proximas} tone="text-primary" />
-          <Section title="Completadas" icon={CheckCircle2} items={groups.completadas} tone="text-success" />
-        </div>
+        <Tabs defaultValue="list">
+          <div className="flex justify-end">
+            <TabsList>
+              <TabsTrigger value="list"><LayoutList className="size-4" /> <span className="ml-1.5 hidden sm:inline">Lista</span></TabsTrigger>
+              <TabsTrigger value="kanban"><Columns3 className="size-4" /> <span className="ml-1.5 hidden sm:inline">Kanban</span></TabsTrigger>
+            </TabsList>
+          </div>
+
+          <TabsContent value="list">
+            <div className="grid gap-6 lg:grid-cols-2">
+              <Section title="Vencidas" icon={AlertTriangle} items={groups.vencidas} tone="text-destructive" />
+              <Section title="Para hoy" icon={Clock} items={groups.hoy} tone="text-warning" />
+              <Section title="Próximas" icon={CalendarDays} items={groups.proximas} tone="text-primary" />
+              <Section title="Completadas" icon={CheckCircle2} items={groups.completadas} tone="text-success" />
+            </div>
+          </TabsContent>
+
+          <TabsContent value="kanban">
+            <div className="flex gap-4 overflow-x-auto pb-4 scrollbar-thin">
+              <KanbanCol title="Vencidas" items={groups.vencidas} tone="bg-rose-500" />
+              <KanbanCol title="Para hoy" items={groups.hoy} tone="bg-amber-500" />
+              <KanbanCol title="Próximas" items={groups.proximas} tone="bg-sky-500" />
+              <KanbanCol title="Completadas" items={groups.completadas} tone="bg-emerald-500" />
+            </div>
+          </TabsContent>
+        </Tabs>
       )}
     </div>
   );

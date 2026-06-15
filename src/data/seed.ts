@@ -61,7 +61,7 @@ export const demoCompany: Company = {
 };
 
 // ── Usuarios ──────────────────────────────────────────────────
-export const demoUsers: User[] = [
+export const demoUsers: User[] = ([
   {
     id: "user_admin",
     company_id: COMPANY_ID,
@@ -132,7 +132,10 @@ export const demoUsers: User[] = [
     active: false,
     created_at: offset(-120),
   },
-];
+] as User[]).map((u, i) => ({
+  ...u,
+  phone: `+54 9 266 ${String(420100 + i * 137).slice(0, 6)}`,
+}));
 
 const sellerIds = ["user_v1", "user_v2", "user_v3", "user_v4", "user_v5"];
 
@@ -194,22 +197,36 @@ export const demoClients: Client[] = clientNames.map((name, i) => ({
 
 // ── Productos (15) ────────────────────────────────────────────
 type SeedProduct = Omit<Product, "id" | "company_id" | "created_at">;
+// Fotos demo (Unsplash). La UI tiene fallback si no cargan.
+const U = (id: string) => `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=900&q=70`;
+const IMG = {
+  pickup: [U("1605559424843-9e4c228bf1c2"), U("1568605117036-5fe5e7bab0b7")],
+  suv: [U("1606664515524-ed2f786a0bd6"), U("1519641471654-76ce0107ad1b")],
+  suv2: [U("1494976388531-d1058494cdd8")],
+  sedan: [U("1549924231-f129b911e442"), U("1552519507-da3b142c6e3d")],
+  kicks: [U("1583121274602-3e2820c69888"), U("1542362567-b07e54358753")],
+  van: [U("1632823471565-1ecdf5c6da77")],
+  tractor: [U("1530267981375-f0de937f5f13")],
+  machine: [U("1581092334651-ddf26d9a09d0")],
+  equip: [U("1581094794329-c8112a89af12")],
+};
+
 const productSeeds: SeedProduct[] = [
-  { name: "Hilux SRV 4x4", brand: "Toyota", category: "Pickups", list_price: 58000000, promo_price: 55500000, availability: 3, status: "disponible", description: "Pickup full, caja automática, cuero.", image_url: null, internal_notes: "Unidad de mayor rotación." },
-  { name: "Corolla Cross XEI", brand: "Toyota", category: "SUV", list_price: 41000000, promo_price: null, availability: 5, status: "disponible", description: "SUV híbrido, bajo consumo.", image_url: null, internal_notes: null },
-  { name: "Ranger XLT 4x2", brand: "Ford", category: "Pickups", list_price: 49500000, promo_price: 47900000, availability: 2, status: "disponible", description: "Pickup con paquete de seguridad.", image_url: null, internal_notes: null },
-  { name: "Territory Titanium", brand: "Ford", category: "SUV", list_price: 46000000, promo_price: null, availability: 0, status: "sin_stock", description: "SUV equipada, pantalla 12''.", image_url: null, internal_notes: "Reposición en 30 días." },
-  { name: "Amarok Comfortline", brand: "Volkswagen", category: "Pickups", list_price: 52000000, promo_price: null, availability: 1, status: "reservado", description: "Pickup V6 turbodiesel.", image_url: null, internal_notes: "Reservada por seña." },
-  { name: "Taos Highline", brand: "Volkswagen", category: "SUV", list_price: 44000000, promo_price: 42500000, availability: 4, status: "disponible", description: "SUV compacta premium.", image_url: null, internal_notes: null },
-  { name: "Onix Premier", brand: "Chevrolet", category: "Autos", list_price: 31000000, promo_price: null, availability: 6, status: "disponible", description: "Sedán full, turbo.", image_url: null, internal_notes: null },
-  { name: "Tracker LTZ", brand: "Chevrolet", category: "SUV", list_price: 39000000, promo_price: 37800000, availability: 3, status: "disponible", description: "SUV urbana automática.", image_url: null, internal_notes: null },
-  { name: "Kangoo Furgón", brand: "Renault", category: "Utilitarios", list_price: 28500000, promo_price: null, availability: 4, status: "disponible", description: "Utilitario ideal reparto.", image_url: null, internal_notes: null },
-  { name: "Master Furgón L2H2", brand: "Renault", category: "Utilitarios", list_price: 46500000, promo_price: null, availability: 2, status: "disponible", description: "Furgón gran volumen.", image_url: null, internal_notes: null },
-  { name: "Tractor 5075E", brand: "John Deere", category: "Maquinaria", list_price: 72000000, promo_price: null, availability: 1, status: "disponible", description: "Tractor 75 HP uso agrícola.", image_url: null, internal_notes: "Margen alto." },
-  { name: "Minicargadora 318", brand: "Bobcat", category: "Maquinaria", list_price: 64000000, promo_price: 61000000, availability: 1, status: "disponible", description: "Minicargadora versátil.", image_url: null, internal_notes: null },
-  { name: "Generador 15KVA", brand: "Honda", category: "Equipamiento", list_price: 8900000, promo_price: null, availability: 8, status: "disponible", description: "Grupo electrógeno trifásico.", image_url: null, internal_notes: null },
-  { name: "Compresor 500L", brand: "Schulz", category: "Equipamiento", list_price: 3200000, promo_price: 2990000, availability: 5, status: "disponible", description: "Compresor industrial.", image_url: null, internal_notes: null },
-  { name: "Hidrolavadora HD 6/15", brand: "Kärcher", category: "Equipamiento", list_price: 2100000, promo_price: null, availability: 0, status: "vendido", description: "Hidrolavadora profesional.", image_url: null, internal_notes: "Última vendida la semana pasada." },
+  { name: "Hilux SRV 4x4", brand: "Toyota", category: "Pickups", condition: "nuevo", version: "SRV 2.8 TDI 4x4 AT", year: 2024, mileage_km: null, fuel: "Diésel", transmission: "Automática", list_price: 58000000, promo_price: 55500000, availability: 3, status: "disponible", description: "Pickup full, caja automática, tapizado de cuero, control de descenso.", images: IMG.pickup, image_url: IMG.pickup[0], internal_notes: "Unidad de mayor rotación." },
+  { name: "Corolla Cross XEI", brand: "Toyota", category: "SUV", condition: "nuevo", version: "XEI 2.0 Hybrid", year: 2024, mileage_km: null, fuel: "Híbrido", transmission: "CVT", list_price: 41000000, promo_price: null, availability: 5, status: "disponible", description: "SUV híbrido, bajo consumo, asistencias de manejo.", images: IMG.suv, image_url: IMG.suv[0], internal_notes: null },
+  { name: "Ranger XLT 4x2", brand: "Ford", category: "Pickups", condition: "nuevo", version: "XLT 2.0 TDI 4x2 MT", year: 2024, mileage_km: null, fuel: "Diésel", transmission: "Manual", list_price: 49500000, promo_price: 47900000, availability: 2, status: "disponible", description: "Pickup con paquete de seguridad y conectividad.", images: IMG.pickup, image_url: IMG.pickup[1], internal_notes: null },
+  { name: "Nissan Kicks Exclusive", brand: "Nissan", category: "SUV", condition: "usado", version: "Exclusive 1.6 CVT", year: 2019, mileage_km: 109000, fuel: "Nafta", transmission: "Automática", list_price: 28900000, promo_price: null, availability: 1, status: "disponible", description: "Único dueño, service oficial al día, excelente estado. Recibimos tu usado.", images: IMG.kicks, image_url: IMG.kicks[0], internal_notes: "Tomado en parte de pago. Margen bueno." },
+  { name: "Amarok Comfortline", brand: "Volkswagen", category: "Pickups", condition: "usado", version: "Comfortline 2.0 TDI 4x4", year: 2021, mileage_km: 78000, fuel: "Diésel", transmission: "Automática", list_price: 41500000, promo_price: null, availability: 1, status: "reservado", description: "Pickup V6, muy cuidada, cubiertas nuevas.", images: IMG.pickup, image_url: IMG.pickup[0], internal_notes: "Reservada por seña." },
+  { name: "Taos Highline", brand: "Volkswagen", category: "SUV", condition: "nuevo", version: "Highline 1.4 TSI", year: 2024, mileage_km: null, fuel: "Nafta", transmission: "Automática", list_price: 44000000, promo_price: 42500000, availability: 4, status: "disponible", description: "SUV compacta premium, techo panorámico.", images: IMG.suv2, image_url: IMG.suv2[0], internal_notes: null },
+  { name: "Onix Premier", brand: "Chevrolet", category: "Autos", condition: "nuevo", version: "Premier 1.0 Turbo AT", year: 2024, mileage_km: null, fuel: "Nafta", transmission: "Automática", list_price: 31000000, promo_price: null, availability: 6, status: "disponible", description: "Sedán full, turbo, pantalla 8''.", images: IMG.sedan, image_url: IMG.sedan[0], internal_notes: null },
+  { name: "Tracker LTZ", brand: "Chevrolet", category: "SUV", condition: "usado", version: "LTZ 1.2 Turbo", year: 2022, mileage_km: 45000, fuel: "Nafta", transmission: "Automática", list_price: 33800000, promo_price: 32900000, availability: 1, status: "disponible", description: "SUV urbana, impecable, garantía vigente.", images: IMG.suv, image_url: IMG.suv[1], internal_notes: null },
+  { name: "Kangoo Furgón", brand: "Renault", category: "Utilitarios", condition: "nuevo", version: "Furgón 1.6 Confort", year: 2024, mileage_km: null, fuel: "Nafta", transmission: "Manual", list_price: 28500000, promo_price: null, availability: 4, status: "disponible", description: "Utilitario ideal reparto urbano.", images: IMG.van, image_url: IMG.van[0], internal_notes: null },
+  { name: "Master Furgón L2H2", brand: "Renault", category: "Utilitarios", condition: "nuevo", version: "L2H2 2.3 dCi", year: 2024, mileage_km: null, fuel: "Diésel", transmission: "Manual", list_price: 46500000, promo_price: null, availability: 2, status: "disponible", description: "Furgón gran volumen de carga.", images: IMG.van, image_url: IMG.van[0], internal_notes: null },
+  { name: "Tractor 5075E", brand: "John Deere", category: "Maquinaria", condition: "nuevo", version: "5075E 75 HP", year: 2024, mileage_km: null, fuel: "Diésel", transmission: "Manual", list_price: 72000000, promo_price: null, availability: 1, status: "disponible", description: "Tractor 75 HP para uso agrícola.", images: IMG.tractor, image_url: IMG.tractor[0], internal_notes: "Margen alto." },
+  { name: "Minicargadora 318", brand: "Bobcat", category: "Maquinaria", condition: "nuevo", version: "S70 / 318", year: 2024, mileage_km: null, fuel: "Diésel", transmission: "Hidrostática", list_price: 64000000, promo_price: 61000000, availability: 1, status: "disponible", description: "Minicargadora versátil para obra.", images: IMG.machine, image_url: IMG.machine[0], internal_notes: null },
+  { name: "Generador 15KVA", brand: "Honda", category: "Equipamiento", condition: "nuevo", version: "Trifásico 15KVA", year: 2024, mileage_km: null, fuel: "Nafta", transmission: null, list_price: 8900000, promo_price: null, availability: 8, status: "disponible", description: "Grupo electrógeno trifásico.", images: IMG.equip, image_url: IMG.equip[0], internal_notes: null },
+  { name: "Compresor 500L", brand: "Schulz", category: "Equipamiento", condition: "nuevo", version: "MSV 40/500", year: 2024, mileage_km: null, fuel: null, transmission: null, list_price: 3200000, promo_price: 2990000, availability: 5, status: "disponible", description: "Compresor industrial 500 litros.", images: IMG.equip, image_url: IMG.equip[0], internal_notes: null },
+  { name: "Hidrolavadora HD 6/15", brand: "Kärcher", category: "Equipamiento", condition: "nuevo", version: "HD 6/15 C", year: 2024, mileage_km: null, fuel: null, transmission: null, list_price: 2100000, promo_price: null, availability: 0, status: "vendido", description: "Hidrolavadora profesional de alta presión.", images: IMG.equip, image_url: IMG.equip[0], internal_notes: "Última vendida la semana pasada." },
 ];
 
 export const demoProducts: Product[] = productSeeds.map((p, i) => ({
