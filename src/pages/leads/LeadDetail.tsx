@@ -1,0 +1,278 @@
+import { useState } from "react";
+import { useParams, Link, useNavigate } from "react-router-dom";
+import {
+  ArrowLeft,
+  Phone,
+  MessageCircle,
+  Mail,
+  Pencil,
+  FileText,
+  Calculator,
+  Send,
+  Sparkles,
+  CalendarClock,
+  Trash2,
+} from "lucide-react";
+import { PageHeader } from "@/components/layout/PageHeader";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Badge } from "@/components/ui/badge";
+import { Avatar } from "@/components/ui/avatar";
+import { Field } from "@/components/forms/Field";
+import { LeadStatusBadge, TemperatureBadge } from "@/components/commercial/StatusBadges";
+import { EmptyState } from "@/components/commercial/EmptyState";
+import { useData } from "@/data/store";
+import { useSession } from "@/context/session";
+import { usePlan } from "@/hooks/usePlan";
+import { useToast } from "@/components/ui/toast";
+import { whatsappLink, telLink, mailLink } from "@/lib/contact";
+import { fmtDate, fmtDateTime, fromNow } from "@/lib/date";
+import { LEAD_STATUS_LABEL, LEAD_STATUS_ORDER, INTERACTION_LABEL } from "@/lib/labels";
+import type { InteractionType, LeadStatus, Temperature } from "@/types";
+
+export default function LeadDetail() {
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const { leads, users, interactions, aiScores, updateLead, addInteraction, deleteLead } = useData();
+  const { currentUser } = useSession();
+  const { hasModule } = usePlan();
+  const { toast } = useToast();
+
+  const lead = leads.find((l) => l.id === id);
+  const [intType, setIntType] = useState<InteractionType>("llamada");
+  const [intNote, setIntNote] = useState("");
+
+  if (!lead) {
+    return (
+      <EmptyState
+        icon={FileText}
+        title="Lead no encontrado"
+        description="Puede que haya sido eliminado."
+        action={<Button asChild><Link to="/leads">Volver a leads</Link></Button>}
+      />
+    );
+  }
+
+  const seller = users.find((u) => u.id === lead.assigned_user_id);
+  const leadInteractions = interactions
+    .filter((i) => i.lead_id === lead.id)
+    .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  const score = aiScores.find((s) => s.lead_id === lead.id);
+
+  const changeStatus = (status: LeadStatus) => {
+    updateLead(lead.id, { status });
+    addInteraction({
+      lead_id: lead.id,
+      user_id: currentUser?.id ?? "user_v1",
+      type: "cambio_estado",
+      note: `Estado cambiado a "${LEAD_STATUS_LABEL[status]}"`,
+    });
+    toast("Estado actualizado");
+  };
+
+  const changeTemp = (temperature: Temperature) => {
+    updateLead(lead.id, { temperature });
+    toast("Temperatura actualizada");
+  };
+
+  const submitInteraction = () => {
+    if (!intNote.trim()) {
+      toast("Escribí una nota para registrar la interacción", "warning");
+      return;
+    }
+    addInteraction({
+      lead_id: lead.id,
+      user_id: currentUser?.id ?? "user_v1",
+      type: intType,
+      note: intNote.trim(),
+    });
+    setIntNote("");
+    toast("Interacción registrada");
+  };
+
+  const handleDelete = () => {
+    if (confirm(`¿Eliminar el lead "${lead.name}"?`)) {
+      deleteLead(lead.id);
+      toast("Lead eliminado");
+      navigate("/leads");
+    }
+  };
+
+  return (
+    <div className="space-y-6">
+      <Button variant="ghost" size="sm" asChild className="w-fit">
+        <Link to="/leads"><ArrowLeft className="size-4" /> Volver a leads</Link>
+      </Button>
+
+      <PageHeader
+        title={lead.name}
+        description={`${lead.product_interest ?? "Sin producto"} · Origen: ${lead.source}`}
+        badge={<TemperatureBadge temperature={lead.temperature} />}
+        actions={
+          <>
+            <Button variant="outline" asChild><Link to={`/leads/${lead.id}/edit`}><Pencil className="size-4" /> Editar</Link></Button>
+            <Button variant="ghost" size="icon" onClick={handleDelete} aria-label="Eliminar"><Trash2 className="size-4" /></Button>
+          </>
+        }
+      />
+
+      {/* Acciones rápidas */}
+      <div className="grid grid-cols-2 gap-3 sm:grid-cols-4">
+        <Button asChild variant="outline" className="h-14"><a href={telLink(lead.phone)}><Phone className="size-4" /> Llamar</a></Button>
+        <Button asChild variant="success" className="h-14"><a href={whatsappLink(lead.phone, `Hola ${lead.name}!`)} target="_blank" rel="noreferrer"><MessageCircle className="size-4" /> WhatsApp</a></Button>
+        <Button asChild variant="outline" className="h-14"><Link to={`/growth/quoter?lead=${lead.id}`}><FileText className="size-4" /> Cotizar</Link></Button>
+        <Button asChild variant="outline" className="h-14"><Link to={`/growth/simulator?lead=${lead.id}`}><Calculator className="size-4" /> Simular</Link></Button>
+      </div>
+
+      <div className="grid gap-6 lg:grid-cols-3">
+        {/* Columna izquierda */}
+        <div className="space-y-6 lg:col-span-1">
+          <Card>
+            <CardHeader><CardTitle>Datos del lead</CardTitle></CardHeader>
+            <CardContent className="space-y-3 text-sm">
+              <Row label="Teléfono" value={lead.phone ?? "—"} />
+              <Row label="Email" value={lead.email ?? "—"} />
+              <Row label="Origen" value={lead.source} />
+              <Row label="Vendedor" value={seller?.name ?? "Sin asignar"} />
+              <Row label="Creado" value={fmtDate(lead.created_at)} />
+              <Row label="Actualizado" value={fromNow(lead.updated_at)} />
+              {lead.notes && (
+                <div className="rounded-lg bg-muted/60 p-3 text-muted-foreground">{lead.notes}</div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle>Gestión rápida</CardTitle></CardHeader>
+            <CardContent className="space-y-4">
+              <Field label="Estado">
+                <Select value={lead.status} onChange={(e) => changeStatus(e.target.value as LeadStatus)}>
+                  {LEAD_STATUS_ORDER.map((s) => <option key={s} value={s}>{LEAD_STATUS_LABEL[s]}</option>)}
+                </Select>
+              </Field>
+              <Field label="Temperatura">
+                <Select value={lead.temperature} onChange={(e) => changeTemp(e.target.value as Temperature)}>
+                  <option value="frio">🧊 Frío</option>
+                  <option value="tibio">🌤️ Tibio</option>
+                  <option value="caliente">🔥 Caliente</option>
+                </Select>
+              </Field>
+              <Field label="Próximo contacto" hint="Programá tu seguimiento">
+                <input
+                  type="date"
+                  className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                  value={lead.next_contact_at ? lead.next_contact_at.slice(0, 10) : ""}
+                  onChange={(e) => {
+                    updateLead(lead.id, {
+                      next_contact_at: e.target.value ? new Date(e.target.value).toISOString() : null,
+                    });
+                    toast("Seguimiento programado");
+                  }}
+                />
+              </Field>
+              {lead.next_contact_at && (
+                <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
+                  <CalendarClock className="size-3.5" /> {fmtDate(lead.next_contact_at)}
+                </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* AI Assist score */}
+          {hasModule("ai-assist") && score ? (
+            <Card className="border-primary/30">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2 text-base">
+                  <Sparkles className="size-4 text-primary" /> Score IA: {score.score}/100
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-2 text-sm">
+                <p className="font-medium text-primary">{score.recommended_action}</p>
+                <ul className="list-disc space-y-1 pl-4 text-muted-foreground">
+                  {score.reasons.map((r, i) => <li key={i}>{r}</li>)}
+                </ul>
+              </CardContent>
+            </Card>
+          ) : (
+            <Card className="border-dashed">
+              <CardContent className="flex items-center gap-3 p-4">
+                <Sparkles className="size-5 text-primary" />
+                <div className="flex-1 text-sm">
+                  <p className="font-medium">Score IA del lead</p>
+                  <p className="text-xs text-muted-foreground">Disponible con AI Assist</p>
+                </div>
+                <Button size="sm" variant="outline" asChild><Link to="/ai-assist">Ver</Link></Button>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+
+        {/* Columna derecha: interacciones */}
+        <div className="space-y-6 lg:col-span-2">
+          <Card>
+            <CardHeader><CardTitle>Registrar interacción</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
+                <Select value={intType} onChange={(e) => setIntType(e.target.value as InteractionType)}>
+                  <option value="llamada">📞 Llamada</option>
+                  <option value="whatsapp">💬 WhatsApp</option>
+                  <option value="email">✉️ Email</option>
+                  <option value="reunion">🤝 Reunión</option>
+                  <option value="nota">📝 Nota</option>
+                </Select>
+                <Textarea
+                  placeholder="¿Qué pasó en este contacto?"
+                  value={intNote}
+                  onChange={(e) => setIntNote(e.target.value)}
+                  className="min-h-[44px]"
+                />
+              </div>
+              <div className="flex justify-end">
+                <Button onClick={submitInteraction}><Send className="size-4" /> Registrar</Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader><CardTitle>Historial de interacciones</CardTitle></CardHeader>
+            <CardContent>
+              {leadInteractions.length === 0 ? (
+                <EmptyState icon={MessageCircle} title="Sin interacciones aún" description="Registrá tu primer contacto con este lead." />
+              ) : (
+                <div className="space-y-4">
+                  {leadInteractions.map((i) => {
+                    const user = users.find((u) => u.id === i.user_id);
+                    return (
+                      <div key={i.id} className="flex gap-3">
+                        <Avatar name={user?.name ?? "?"} size="sm" />
+                        <div className="flex-1 border-b pb-4 last:border-0 last:pb-0">
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary">{INTERACTION_LABEL[i.type]}</Badge>
+                            <span className="text-xs text-muted-foreground">{fmtDateTime(i.created_at)}</span>
+                          </div>
+                          <p className="mt-1.5 text-sm">{i.note}</p>
+                          <p className="text-xs text-muted-foreground">{user?.name}</p>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function Row({ label, value }: { label: string; value: string }) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <span className="text-muted-foreground">{label}</span>
+      <span className="truncate text-right font-medium">{value}</span>
+    </div>
+  );
+}
