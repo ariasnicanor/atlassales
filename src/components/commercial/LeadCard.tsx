@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Phone, MessageCircle, ChevronRight, Clock, UserRound } from "lucide-react";
+import { Phone, MessageCircle, ChevronRight, Clock, UserRound, FileText, Calculator } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -21,11 +21,13 @@ interface LeadCardProps {
 
 export function LeadCard({ lead, seller }: LeadCardProps) {
   const overdue = isOverdue(lead.next_contact_at);
-  const { users, updateLead } = useData();
+  const { users, updateLead, quotes, simulations } = useData();
   const { currentUser } = useSession();
   const { toast } = useToast();
   const canReassign = can(currentUser, "assign_leads");
   const sellers = users.filter((u) => u.role === "vendedor" || u.role === "supervisor");
+  const quoteCount = quotes.filter((q) => q.lead_id === lead.id).length;
+  const simCount = simulations.filter((s) => s.lead_id === lead.id).length;
 
   return (
     <Card className="transition-shadow hover:shadow-md">
@@ -79,6 +81,16 @@ export function LeadCard({ lead, seller }: LeadCardProps) {
             Próximo contacto {fromNow(lead.next_contact_at)}
           </div>
         )}
+
+        {/* Registro rápido: cotizaciones y simulaciones del lead */}
+        <Link to={`/leads/${lead.id}`} className="flex items-center gap-3 rounded-lg bg-muted/50 px-2.5 py-1.5 text-xs">
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <FileText className="size-3.5" /> {quoteCount} {quoteCount === 1 ? "cotización" : "cotiz."}
+          </span>
+          <span className="flex items-center gap-1 text-muted-foreground">
+            <Calculator className="size-3.5" /> {simCount} {simCount === 1 ? "simulación" : "sim."}
+          </span>
+        </Link>
 
         <div className="flex items-center gap-2 pt-1">
           <Button asChild size="sm" variant="outline" className="flex-1">

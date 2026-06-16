@@ -7,6 +7,8 @@ import { Avatar } from "@/components/ui/avatar";
 import { Progress } from "@/components/ui/progress";
 import { UpgradeGate } from "@/components/commercial/UpgradeGate";
 import { useData } from "@/data/store";
+import { useSession } from "@/context/session";
+import { can } from "@/lib/permissions";
 import { formatCurrency, formatPercent } from "@/lib/utils";
 import { parseISO } from "date-fns";
 
@@ -18,6 +20,8 @@ function isThisMonth(iso: string) {
 
 function GoalsInner() {
   const { goals, sales, users } = useData();
+  const { currentUser } = useSession();
+  const seeTeam = can(currentUser, "view_team"); // supervisor / admin
 
   const teamGoal = goals.find((g) => g.user_id === null);
   const monthSales = sales.filter((s) => isThisMonth(s.created_at));
@@ -27,19 +31,19 @@ function GoalsInner() {
   const rows = useMemo(
     () =>
       goals
-        .filter((g) => g.user_id)
+        .filter((g) => g.user_id && (seeTeam || g.user_id === currentUser?.id))
         .map((g) => {
           const user = users.find((u) => u.id === g.user_id);
           const achieved = monthSales.filter((s) => s.user_id === g.user_id).reduce((a, s) => a + s.amount, 0);
           const progress = Math.min(100, (achieved / g.target_amount) * 100);
           return { goal: g, user, achieved, progress };
         }),
-    [goals, monthSales, users]
+    [goals, monthSales, users, seeTeam, currentUser]
   );
 
   return (
     <div className="space-y-6">
-      {teamGoal && (
+      {seeTeam && teamGoal && (
         <Card className="border-primary/30">
           <CardHeader><CardTitle className="flex items-center gap-2"><Target className="size-5 text-primary" /> Objetivo del equipo</CardTitle></CardHeader>
           <CardContent className="space-y-3">

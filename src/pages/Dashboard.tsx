@@ -134,27 +134,6 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
-
-      {/* Accesos rápidos */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Accesos rápidos</CardTitle>
-        </CardHeader>
-        <CardContent className="grid grid-cols-2 gap-3 sm:grid-cols-4">
-          <Button variant="outline" className="h-20 flex-col gap-1.5" onClick={() => navigate("/leads/new")}>
-            <Plus className="size-5" /> Crear lead
-          </Button>
-          <Button variant="outline" className="h-20 flex-col gap-1.5" onClick={() => navigate("/tasks?nueva=1")}>
-            <CheckSquare className="size-5" /> Crear tarea
-          </Button>
-          <Button variant="outline" className="h-20 flex-col gap-1.5" onClick={() => navigate("/stock")}>
-            <Package className="size-5" /> Ver stock
-          </Button>
-          <Button variant="outline" className="h-20 flex-col gap-1.5" onClick={() => navigate("/growth/quoter")}>
-            <FileText className="size-5" /> Cotizar
-          </Button>
-        </CardContent>
-      </Card>
     </div>
   );
 }

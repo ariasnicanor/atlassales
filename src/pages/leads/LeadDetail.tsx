@@ -21,13 +21,14 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Avatar } from "@/components/ui/avatar";
 import { Field } from "@/components/forms/Field";
-import { LeadStatusBadge, TemperatureBadge } from "@/components/commercial/StatusBadges";
+import { LeadStatusBadge, TemperatureBadge, QuoteStatusBadge } from "@/components/commercial/StatusBadges";
 import { EmptyState } from "@/components/commercial/EmptyState";
 import { useData } from "@/data/store";
 import { useSession } from "@/context/session";
 import { usePlan } from "@/hooks/usePlan";
 import { useToast } from "@/components/ui/toast";
 import { whatsappLink, telLink, mailLink } from "@/lib/contact";
+import { formatCurrency } from "@/lib/utils";
 import { fmtDate, fmtDateTime, fromNow } from "@/lib/date";
 import { LEAD_STATUS_LABEL, LEAD_STATUS_ORDER, INTERACTION_LABEL } from "@/lib/labels";
 import type { InteractionType, LeadStatus, Temperature } from "@/types";
@@ -35,7 +36,7 @@ import type { InteractionType, LeadStatus, Temperature } from "@/types";
 export default function LeadDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { leads, users, interactions, aiScores, updateLead, addInteraction, deleteLead } = useData();
+  const { leads, users, interactions, aiScores, quotes, simulations, products, updateLead, addInteraction, deleteLead } = useData();
   const { currentUser } = useSession();
   const { hasModule } = usePlan();
   const { toast } = useToast();
@@ -60,6 +61,9 @@ export default function LeadDetail() {
     .filter((i) => i.lead_id === lead.id)
     .sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
   const score = aiScores.find((s) => s.lead_id === lead.id);
+  const leadQuotes = quotes.filter((q) => q.lead_id === lead.id).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  const leadSims = simulations.filter((s) => s.lead_id === lead.id).sort((a, b) => (a.created_at < b.created_at ? 1 : -1));
+  const productName = (pid?: string | null) => products.find((p) => p.id === pid)?.name ?? "Producto";
 
   const changeStatus = (status: LeadStatus) => {
     updateLead(lead.id, { status });
@@ -207,6 +211,48 @@ export default function LeadDetail() {
               </CardContent>
             </Card>
           )}
+
+          {/* Cotizaciones y simulaciones del lead */}
+          <Card>
+            <CardHeader className="flex-row items-center justify-between space-y-0">
+              <CardTitle className="text-base">Cotizaciones y simulaciones</CardTitle>
+              <Button size="sm" variant="ghost" asChild>
+                <Link to={`/growth/quoter?lead=${lead.id}`}><FileText className="size-4" /></Link>
+              </Button>
+            </CardHeader>
+            <CardContent className="space-y-3">
+              {leadQuotes.length === 0 && leadSims.length === 0 ? (
+                <p className="text-sm text-muted-foreground">
+                  Sin cotizaciones ni simulaciones todavía. Generá una con los botones de arriba.
+                </p>
+              ) : (
+                <>
+                  {leadQuotes.map((q) => (
+                    <div key={q.id} className="flex items-center justify-between gap-2 rounded-lg border p-2.5">
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+                          <FileText className="size-3.5 text-primary" /> {productName(q.product_id)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{formatCurrency(q.final_price)} · {fmtDate(q.created_at)}</p>
+                      </div>
+                      <QuoteStatusBadge status={q.status} />
+                    </div>
+                  ))}
+                  {leadSims.map((s) => (
+                    <div key={s.id} className="flex items-center justify-between gap-2 rounded-lg border p-2.5">
+                      <div className="min-w-0">
+                        <p className="flex items-center gap-1.5 truncate text-sm font-medium">
+                          <Calculator className="size-3.5 text-primary" /> {productName(s.product_id)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">{s.term_months} cuotas · {fmtDate(s.created_at)}</p>
+                      </div>
+                      <span className="shrink-0 text-sm font-semibold">{formatCurrency(s.estimated_payment)}</span>
+                    </div>
+                  ))}
+                </>
+              )}
+            </CardContent>
+          </Card>
         </div>
 
         {/* Columna derecha: interacciones */}

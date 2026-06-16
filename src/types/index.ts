@@ -165,6 +165,7 @@ export interface Quote {
   list_price: number;
   discount: number;
   expenses: number;
+  trade_in_value?: number | null; // valor del usado entregado
   final_price: number;
   financing_summary?: string | null;
   status: QuoteStatus;
@@ -177,6 +178,7 @@ export interface FinancialSimulation {
   lead_id?: UUID | null;
   product_id?: UUID | null;
   price: number;
+  trade_in_value?: number | null; // valor del usado entregado (cuenta como anticipo)
   down_payment: number;
   financed_amount: number;
   term_months: number;
