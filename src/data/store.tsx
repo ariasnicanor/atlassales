@@ -55,6 +55,7 @@ interface DataContextValue extends DataState {
   createTask: (input: Partial<Task>) => Task;
   updateTask: (id: string, patch: Partial<Task>) => void;
   toggleTaskComplete: (id: string) => void;
+  deleteTask: (id: string) => void;
   // Users
   updateUser: (id: string, patch: Partial<User>) => void;
   // Quotes & simulations
@@ -230,6 +231,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
           ),
         })),
 
+      deleteTask: (id) =>
+        setState((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== id) })),
+
       updateUser: (id, patch) =>
         setState((s) => ({
           ...s,
@@ -250,7 +254,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           list_price: list,
           discount,
           expenses,
-          final_price: input.final_price ?? list - discount + expenses,
+          trade_in_value: input.trade_in_value ?? 0,
+          final_price: input.final_price ?? list - discount + expenses - (input.trade_in_value ?? 0),
           financing_summary: input.financing_summary ?? null,
           status: input.status ?? "borrador",
           created_at: nowIso(),
@@ -272,6 +277,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           lead_id: input.lead_id ?? null,
           product_id: input.product_id ?? null,
           price: input.price ?? 0,
+          trade_in_value: input.trade_in_value ?? 0,
           down_payment: input.down_payment ?? 0,
           financed_amount: input.financed_amount ?? 0,
           term_months: input.term_months ?? 12,

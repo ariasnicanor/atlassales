@@ -13,6 +13,7 @@ import { QuoteStatusBadge } from "@/components/commercial/StatusBadges";
 import { EmptyState } from "@/components/commercial/EmptyState";
 import { UpgradeGate } from "@/components/commercial/UpgradeGate";
 import { useData } from "@/data/store";
+import { useScopedData } from "@/hooks/useScopedData";
 import { useSession } from "@/context/session";
 import { useToast } from "@/components/ui/toast";
 import { formatCurrency } from "@/lib/utils";
@@ -22,7 +23,8 @@ import type { QuoteStatus } from "@/types";
 
 function QuoterInner() {
   const [params] = useSearchParams();
-  const { products, leads, quotes, company, createQuote, updateQuote } = useData();
+  const { products, company, createQuote, updateQuote, addInteraction } = useData();
+  const { leads, quotes } = useScopedData(); // solo los leads/cotizaciones del vendedor
   const { currentUser } = useSession();
   const { toast } = useToast();
 
@@ -32,9 +34,13 @@ function QuoterInner() {
   const [listPrice, setListPrice] = useState(initialProduct?.list_price ?? 0);
   const [discount, setDiscount] = useState(0);
   const [expenses, setExpenses] = useState(0);
+  const [tradeIn, setTradeIn] = useState(0);
   const [financing, setFinancing] = useState("");
 
-  const finalPrice = useMemo(() => Math.max(0, listPrice - discount + expenses), [listPrice, discount, expenses]);
+  const finalPrice = useMemo(
+    () => Math.max(0, listPrice - discount + expenses - tradeIn),
+    [listPrice, discount, expenses, tradeIn]
+  );
 
   const onProduct = (id: string) => {
     setProductId(id);
@@ -49,7 +55,7 @@ function QuoterInner() {
 Cliente: ${leadName}
 Producto: ${productName}
 Precio lista: ${formatCurrency(listPrice)}
-${discount ? `Bonificación: -${formatCurrency(discount)}\n` : ""}${expenses ? `Gastos: ${formatCurrency(expenses)}\n` : ""}💰 Precio final: ${formatCurrency(finalPrice)}
+${discount ? `Bonificación: -${formatCurrency(discount)}\n` : ""}${expenses ? `Gastos: ${formatCurrency(expenses)}\n` : ""}${tradeIn ? `Usado a cuenta: -${formatCurrency(tradeIn)}\n` : ""}💰 Precio final: ${formatCurrency(finalPrice)}
 ${financing ? `Financiación: ${financing}` : ""}`;
 
   const save = (status: QuoteStatus) => {
@@ -60,11 +66,34 @@ ${financing ? `Financiación: ${financing}` : ""}`;
       list_price: listPrice,
       discount,
       expenses,
+      trade_in_value: tradeIn,
       final_price: finalPrice,
       financing_summary: financing || null,
       status,
     });
+    if (leadId) {
+      addInteraction({
+        lead_id: leadId,
+        user_id: currentUser?.id ?? "user_v1",
+        type: "cotizacion",
+        note: `Cotización ${status === "borrador" ? "guardada" : "enviada"} · ${productName} · ${formatCurrency(finalPrice)}${tradeIn ? ` (recibe usado por ${formatCurrency(tradeIn)})` : ""}`,
+      });
+    }
     toast(status === "borrador" ? "Cotización guardada" : "Cotización marcada como enviada");
+  };
+
+  // Registrar aceptación/rechazo en el seguimiento del lead
+  const decide = (q: (typeof quotes)[number], status: "aceptada" | "rechazada") => {
+    updateQuote(q.id, { status });
+    if (q.lead_id) {
+      addInteraction({
+        lead_id: q.lead_id,
+        user_id: currentUser?.id ?? "user_v1",
+        type: "cotizacion",
+        note: `Cotización ${status === "aceptada" ? "ACEPTADA ✅" : "rechazada ❌"} · ${formatCurrency(q.final_price)}`,
+      });
+    }
+    toast(status === "aceptada" ? "Cotización aceptada" : "Cotización rechazada");
   };
 
   const recentQuotes = quotes.slice(0, 8);
@@ -92,11 +121,21 @@ ${financing ? `Financiación: ${financing}` : ""}`;
             <Field label="Bonificación"><Input type="number" value={discount} onChange={(e) => setDiscount(Number(e.target.value))} /></Field>
             <Field label="Gastos"><Input type="number" value={expenses} onChange={(e) => setExpenses(Number(e.target.value))} /></Field>
           </div>
+          <Field label="Entrega un usado (valor)" hint="Se descuenta del precio final">
+            <Input type="number" value={tradeIn} onChange={(e) => setTradeIn(Number(e.target.value))} />
+          </Field>
+
           <Field label="Financiación (texto)" hint="Ej: Anticipo 40% + 12 cuotas fijas">
             <Textarea value={financing} onChange={(e) => setFinancing(e.target.value)} className="min-h-[60px]" />
           </Field>
 
-          <div className="rounded-xl bg-primary/10 p-4">
+          <div className="space-y-1 rounded-xl bg-primary/10 p-4">
+            {tradeIn > 0 && (
+              <div className="flex items-center justify-between text-sm text-muted-foreground">
+                <span>Usado a cuenta</span>
+                <span>-{formatCurrency(tradeIn)}</span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <span className="text-sm text-muted-foreground">Precio final</span>
               <span className="text-2xl font-bold text-primary">{formatCurrency(finalPrice)}</span>
@@ -134,8 +173,8 @@ ${financing ? `Financiación: ${financing}` : ""}`;
                       <span className="font-semibold">{formatCurrency(q.final_price)}</span>
                       {q.status === "enviada" && (
                         <div className="flex gap-1">
-                          <Button size="sm" variant="ghost" onClick={() => { updateQuote(q.id, { status: "aceptada" }); toast("Cotización aceptada"); }}>Aceptar</Button>
-                          <Button size="sm" variant="ghost" onClick={() => { updateQuote(q.id, { status: "rechazada" }); toast("Cotización rechazada"); }}>Rechazar</Button>
+                          <Button size="sm" variant="ghost" onClick={() => decide(q, "aceptada")}>Aceptar</Button>
+                          <Button size="sm" variant="ghost" onClick={() => decide(q, "rechazada")}>Rechazar</Button>
                         </div>
                       )}
                     </div>

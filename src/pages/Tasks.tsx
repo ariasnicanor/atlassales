@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, CheckSquare, CheckCircle2, Circle, AlertTriangle, CalendarDays, Clock, LayoutList, Columns3 } from "lucide-react";
+import { Plus, CheckSquare, CheckCircle2, Circle, AlertTriangle, CalendarDays, Clock, LayoutList, Columns3, Trash2 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,12 +39,13 @@ const priorityVariant: Record<TaskPriority, "muted" | "warning" | "destructive">
 };
 
 export default function Tasks() {
-  const { leads, toggleTaskComplete, createTask, users } = useData();
+  const { leads, toggleTaskComplete, createTask, updateTask, deleteTask, users } = useData();
   const { tasks, seeAll } = useScopedData();
   const { currentUser } = useSession();
   const { toast } = useToast();
   const [params, setParams] = useSearchParams();
   const [open, setOpen] = useState(params.get("nueva") === "1");
+  const [editing, setEditing] = useState<Task | null>(null);
 
   const handleOpenChange = (v: boolean) => {
     setOpen(v);
@@ -103,14 +104,14 @@ export default function Tasks() {
         <button onClick={() => toggleTaskComplete(t.id)} className="mt-0.5" aria-label="Completar tarea">
           {done ? <CheckCircle2 className="size-5 text-success" /> : <Circle className="size-5 text-muted-foreground hover:text-primary" />}
         </button>
-        <div className="min-w-0 flex-1">
+        <button onClick={() => setEditing(t)} className="min-w-0 flex-1 text-left">
           <p className={cn("text-sm font-medium", done && "text-muted-foreground line-through")}>{t.title}</p>
           <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
             <span className="flex items-center gap-1"><CalendarDays className="size-3.5" /> {fmtDate(t.due_date)}</span>
             {t.due_time && <span className="flex items-center gap-1"><Clock className="size-3.5" /> {t.due_time}</span>}
-            {lead && <Link to={`/leads/${lead.id}`} className="text-primary hover:underline">{lead.name}</Link>}
+            {lead && <span className="text-primary">{lead.name}</span>}
           </div>
-        </div>
+        </button>
         <Badge variant={priorityVariant[t.priority]}>{TASK_PRIORITY_LABEL[t.priority]}</Badge>
         {overdue && <Badge variant="destructive">Vencida</Badge>}
       </div>
@@ -144,7 +145,7 @@ export default function Tasks() {
           <button onClick={() => toggleTaskComplete(t.id)} className="mt-0.5" aria-label="Completar tarea">
             {done ? <CheckCircle2 className="size-4 text-success" /> : <Circle className="size-4 text-muted-foreground hover:text-primary" />}
           </button>
-          <p className={cn("flex-1 text-sm font-medium", done && "text-muted-foreground line-through")}>{t.title}</p>
+          <button onClick={() => setEditing(t)} className={cn("flex-1 text-left text-sm font-medium", done && "text-muted-foreground line-through")}>{t.title}</button>
         </div>
         <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
           <span className="flex items-center gap-1"><CalendarDays className="size-3" /> {fmtDate(t.due_date)}</span>
@@ -253,6 +254,116 @@ export default function Tasks() {
           </TabsContent>
         </Tabs>
       )}
+
+      {/* Editar / borrar tarea */}
+      <Dialog open={Boolean(editing)} onOpenChange={(v) => !v && setEditing(null)}>
+        <DialogContent>
+          {editing && (
+            <TaskEditForm
+              key={editing.id}
+              task={editing}
+              leads={leads}
+              users={users}
+              seeAll={seeAll}
+              onSave={(patch) => { updateTask(editing.id, patch); toast("Tarea actualizada"); setEditing(null); }}
+              onDelete={() => { deleteTask(editing.id); toast("Tarea eliminada"); setEditing(null); }}
+              onToggle={() => { toggleTaskComplete(editing.id); setEditing(null); }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
+
+function TaskEditForm({
+  task,
+  leads,
+  users,
+  seeAll,
+  onSave,
+  onDelete,
+  onToggle,
+}: {
+  task: Task;
+  leads: { id: string; name: string }[];
+  users: { id: string; name: string }[];
+  seeAll: boolean;
+  onSave: (patch: Partial<Task>) => void;
+  onDelete: () => void;
+  onToggle: () => void;
+}) {
+  const [title, setTitle] = useState(task.title);
+  const [description, setDescription] = useState(task.description ?? "");
+  const [dueDate, setDueDate] = useState(task.due_date.slice(0, 10));
+  const [dueTime, setDueTime] = useState(task.due_time ?? "");
+  const [priority, setPriority] = useState<TaskPriority>(task.priority);
+  const [status, setStatus] = useState(task.status);
+  const [leadId, setLeadId] = useState(task.lead_id ?? "");
+  const [assigned, setAssigned] = useState(task.assigned_user_id ?? "");
+
+  const save = () =>
+    onSave({
+      title,
+      description: description || null,
+      due_date: new Date(dueDate).toISOString(),
+      due_time: dueTime || null,
+      priority,
+      status,
+      lead_id: leadId || null,
+      assigned_user_id: assigned || null,
+    });
+
+  return (
+    <div className="space-y-4">
+      <DialogHeader><DialogTitle>Editar tarea</DialogTitle></DialogHeader>
+      <Field label="Título"><Input value={title} onChange={(e) => setTitle(e.target.value)} /></Field>
+      <Field label="Descripción"><Textarea value={description} onChange={(e) => setDescription(e.target.value)} /></Field>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Fecha"><Input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} /></Field>
+        <Field label="Hora"><Input type="time" value={dueTime} onChange={(e) => setDueTime(e.target.value)} /></Field>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Prioridad">
+          <Select value={priority} onChange={(e) => setPriority(e.target.value as TaskPriority)}>
+            <option value="baja">Baja</option>
+            <option value="media">Media</option>
+            <option value="alta">Alta</option>
+          </Select>
+        </Field>
+        <Field label="Estado">
+          <Select value={status} onChange={(e) => setStatus(e.target.value as Task["status"])}>
+            <option value="pendiente">Pendiente</option>
+            <option value="en_proceso">En proceso</option>
+            <option value="completada">Completada</option>
+          </Select>
+        </Field>
+      </div>
+      <div className="grid gap-4 sm:grid-cols-2">
+        <Field label="Lead asociado">
+          <Select value={leadId} onChange={(e) => setLeadId(e.target.value)}>
+            <option value="">Ninguno</option>
+            {leads.map((l) => <option key={l.id} value={l.id}>{l.name}</option>)}
+          </Select>
+        </Field>
+        {seeAll && (
+          <Field label="Asignar a">
+            <Select value={assigned} onChange={(e) => setAssigned(e.target.value)}>
+              <option value="">Sin asignar</option>
+              {users.map((u) => <option key={u.id} value={u.id}>{u.name}</option>)}
+            </Select>
+          </Field>
+        )}
+      </div>
+      <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+        <Button variant="ghost" onClick={onToggle}>
+          {task.status === "completada" ? "Marcar pendiente" : "Marcar completada"}
+        </Button>
+        <div className="flex gap-2">
+          <Button variant="destructive" onClick={onDelete}><Trash2 className="size-4" /> Borrar</Button>
+          <Button onClick={save}>Guardar</Button>
+        </div>
+      </div>
     </div>
   );
 }

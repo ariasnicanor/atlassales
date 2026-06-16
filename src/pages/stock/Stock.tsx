@@ -2,7 +2,7 @@ import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
-import { Plus, Search, Package, Gauge, Calendar, Fuel } from "lucide-react";
+import { Plus, Search, Package, Gauge, Calendar, Fuel, SlidersHorizontal, X } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -39,6 +39,12 @@ export default function Stock() {
   const [category, setCategory] = useState("todas");
   const [condition, setCondition] = useState("todas");
   const [open, setOpen] = useState(false);
+  const [filtersOpen, setFiltersOpen] = useState(false);
+
+  const conditionLabel = condition === "nuevo" ? "0 km" : condition === "usado" ? "Usados" : "";
+  const activeCount =
+    (brand !== "todas" ? 1 : 0) + (category !== "todas" ? 1 : 0) + (condition !== "todas" ? 1 : 0);
+  const clearFilters = () => { setBrand("todas"); setCategory("todas"); setCondition("todas"); };
 
   const brands = Array.from(new Set(products.map((p) => p.brand).filter(Boolean)));
   const categories = Array.from(new Set(products.map((p) => p.category)));
@@ -155,25 +161,59 @@ export default function Stock() {
         }
       />
 
-      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
-        <div className="relative">
+      {/* Búsqueda + filtros en popup (igual que Leads) */}
+      <div className="flex items-center gap-2">
+        <div className="relative flex-1">
           <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
           <Input placeholder="Buscar producto..." value={search} onChange={(e) => setSearch(e.target.value)} className="pl-9" />
         </div>
-        <Select value={condition} onChange={(e) => setCondition(e.target.value)}>
-          <option value="todas">Nuevos y usados</option>
-          <option value="nuevo">0 km</option>
-          <option value="usado">Usados</option>
-        </Select>
-        <Select value={brand} onChange={(e) => setBrand(e.target.value)}>
-          <option value="todas">Todas las marcas</option>
-          {brands.map((b) => <option key={b} value={b}>{b}</option>)}
-        </Select>
-        <Select value={category} onChange={(e) => setCategory(e.target.value)}>
-          <option value="todas">Todas las categorías</option>
-          {categories.map((c) => <option key={c} value={c}>{c}</option>)}
-        </Select>
+        <Dialog open={filtersOpen} onOpenChange={setFiltersOpen}>
+          <DialogTrigger asChild>
+            <Button variant="outline" className="shrink-0">
+              <SlidersHorizontal className="size-4" />
+              <span className="hidden sm:inline">Filtros</span>
+              {activeCount > 0 && <Badge variant="default" className="ml-1">{activeCount}</Badge>}
+            </Button>
+          </DialogTrigger>
+          <DialogContent className="max-w-sm">
+            <DialogHeader><DialogTitle>Filtros</DialogTitle></DialogHeader>
+            <div className="space-y-4">
+              <Field label="Condición">
+                <Select value={condition} onChange={(e) => setCondition(e.target.value)}>
+                  <option value="todas">Nuevos y usados</option>
+                  <option value="nuevo">0 km</option>
+                  <option value="usado">Usados</option>
+                </Select>
+              </Field>
+              <Field label="Marca">
+                <Select value={brand} onChange={(e) => setBrand(e.target.value)}>
+                  <option value="todas">Todas las marcas</option>
+                  {brands.map((b) => <option key={b} value={b}>{b}</option>)}
+                </Select>
+              </Field>
+              <Field label="Categoría">
+                <Select value={category} onChange={(e) => setCategory(e.target.value)}>
+                  <option value="todas">Todas las categorías</option>
+                  {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                </Select>
+              </Field>
+            </div>
+            <DialogFooter>
+              <Button variant="ghost" onClick={clearFilters}>Limpiar</Button>
+              <DialogClose asChild><Button>Ver {filtered.length} resultados</Button></DialogClose>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       </div>
+
+      {activeCount > 0 && (
+        <div className="flex flex-wrap items-center gap-2">
+          {condition !== "todas" && <Chip label={conditionLabel} onClear={() => setCondition("todas")} />}
+          {brand !== "todas" && <Chip label={brand} onClear={() => setBrand("todas")} />}
+          {category !== "todas" && <Chip label={category} onClear={() => setCategory("todas")} />}
+          <button onClick={clearFilters} className="text-xs text-muted-foreground underline">Limpiar todo</button>
+        </div>
+      )}
 
       {filtered.length === 0 ? (
         <EmptyState icon={Package} title="No hay productos" description="Ajustá los filtros o cargá un producto nuevo." />
@@ -235,5 +275,16 @@ export default function Stock() {
         </div>
       )}
     </div>
+  );
+}
+
+function Chip({ label, onClear }: { label: string; onClear: () => void }) {
+  return (
+    <Badge variant="secondary" className="gap-1 pr-1">
+      {label}
+      <button onClick={onClear} className="rounded-full p-0.5 hover:bg-background/50" aria-label="Quitar filtro">
+        <X className="size-3" />
+      </button>
+    </Badge>
   );
 }
