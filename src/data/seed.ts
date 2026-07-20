@@ -19,7 +19,7 @@ import type {
 } from "@/types";
 
 // ─────────────────────────────────────────────────────────────
-// Demo seed — "Surf Demo Company"
+// Demo seed — "Demo Company"
 // Genera actividad realista de una empresa comercial para que la
 // app se vea vendible apenas se abre. Fechas relativas a hoy.
 // ─────────────────────────────────────────────────────────────
@@ -50,7 +50,7 @@ const COMPANY_ID = "comp_surf_demo";
 
 export const demoCompany: Company = {
   id: COMPANY_ID,
-  name: "Surf Demo Company",
+  name: "Demo Company",
   logo_url: null,
   primary_color: "#0EA5E9",
   secondary_color: "#7C3AED",

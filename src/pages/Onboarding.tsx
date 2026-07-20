@@ -26,7 +26,7 @@ export default function Onboarding() {
           <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
             <Waves className="size-6" />
           </div>
-          <span className="text-lg font-semibold">Surf Sales OS</span>
+          <span className="text-lg font-semibold">Atlas Sales OS</span>
         </div>
 
         <Card>
