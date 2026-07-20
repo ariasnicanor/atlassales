@@ -6,7 +6,9 @@ import { BrandingProvider } from "@/components/BrandingProvider";
 import { ToastProvider } from "@/components/ui/toast";
 
 import Login from "@/pages/Login";
+import Register from "@/pages/Register";
 import Onboarding from "@/pages/Onboarding";
+import Audit from "@/pages/Audit";
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/leads/Leads";
 import LeadDetail from "@/pages/leads/LeadDetail";
@@ -35,6 +37,7 @@ function AppRoutes() {
   return (
     <Routes>
       <Route path="/login" element={<Login />} />
+      <Route path="/register" element={<Register />} />
       <Route path="/onboarding" element={<Onboarding />} />
       <Route element={<AppLayout />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
@@ -49,6 +52,7 @@ function AppRoutes() {
         <Route path="/stock/:id" element={<ProductDetail />} />
         <Route path="/tasks" element={<Tasks />} />
         <Route path="/users" element={<Users />} />
+        <Route path="/audit" element={<Audit />} />
         <Route path="/reports" element={<Reports />} />
         <Route path="/settings" element={<Settings />} />
         <Route path="/growth/simulator" element={<Simulator />} />
