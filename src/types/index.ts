@@ -1,5 +1,5 @@
 // ─────────────────────────────────────────────────────────────
-// Surf Sales OS — Modelo de dominio
+// Atlas Sales OS — Modelo de dominio
 // Estos tipos reflejan el schema de Supabase (ver /supabase/schema.sql)
 // ─────────────────────────────────────────────────────────────
 

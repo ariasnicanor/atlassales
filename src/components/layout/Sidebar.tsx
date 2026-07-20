@@ -28,7 +28,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold leading-tight">{company.name}</p>
-          <p className="truncate text-xs text-muted-foreground">Surf Sales OS</p>
+          <p className="truncate text-xs text-muted-foreground">Atlas Sales OS</p>
         </div>
       </div>
 

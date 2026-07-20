@@ -33,7 +33,7 @@ export default function Login() {
           <div className="flex size-10 items-center justify-center rounded-xl bg-white/20 backdrop-blur">
             <Waves className="size-6" />
           </div>
-          <span className="text-lg font-semibold">Surf Sales OS</span>
+          <span className="text-lg font-semibold">Atlas Sales OS</span>
         </div>
 
         <div className="space-y-6">
@@ -60,7 +60,7 @@ export default function Login() {
         </div>
 
         <p className="text-sm text-white/60">
-          © {new Date().getFullYear()} Surf Sales OS — Demo comercial
+          © {new Date().getFullYear()} Atlas Sales OS — Demo comercial
         </p>
       </div>
 

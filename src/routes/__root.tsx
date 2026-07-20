@@ -13,13 +13,13 @@ export const Route = createRootRouteWithContext<{ queryClient: QueryClient }>()(
     meta: [
       { charSet: "utf-8" },
       { name: "viewport", content: "width=device-width, initial-scale=1" },
-      { title: "Surf Sales OS — Menos tiempo cargando, más tiempo vendiendo" },
+      { title: "Atlas Sales OS — Menos tiempo cargando, más tiempo vendiendo" },
       {
         name: "description",
         content:
           "Sistema de gestión comercial para vendedores. Cargá leads en 20 segundos, registrá seguimientos en 10 y cerrá más ventas.",
       },
-      { property: "og:title", content: "Surf Sales OS" },
+      { property: "og:title", content: "Atlas Sales OS" },
       {
         property: "og:description",
         content: "Menos tiempo cargando información. Más tiempo vendiendo.",
