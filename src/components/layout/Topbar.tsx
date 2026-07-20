@@ -12,7 +12,7 @@ import { CreateMenu } from "./CreateMenu";
 import { NotificationsBell } from "./NotificationsBell";
 
 export function Topbar() {
-  const { currentUser, logout, theme, toggleTheme, login } = useSession();
+  const { currentUser, logout, theme, toggleTheme, loginAs } = useSession();
   const { users, company, resetDemo } = useData();
 
   return (
@@ -69,7 +69,7 @@ export function Topbar() {
         {/* Demo: cambiar de usuario para ver permisos por rol */}
         <Select
           value={currentUser?.id ?? ""}
-          onChange={(e) => login(e.target.value)}
+          onChange={(e) => loginAs(e.target.value)}
           className="hidden w-44 md:block"
           aria-label="Cambiar usuario (demo)"
         >

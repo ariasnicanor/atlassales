@@ -66,6 +66,23 @@ export interface User {
   role: UserRole;
   avatar_url?: string | null;
   active: boolean;
+  /** Solo relevante para vendedores. */
+  supervisor_id?: UUID | null;
+  /** Demo-only. En producción lo gestiona Supabase Auth. */
+  password_hash?: string | null;
+  /** Overrides por-usuario sobre la matriz de rol. */
+  permission_overrides?: Partial<Record<string, string[]>>;
+  created_at: ISODate;
+}
+
+export interface AuditLogEntry {
+  id: UUID;
+  user_id: UUID | null;
+  user_name: string;
+  action: string;
+  resource: string;
+  resource_id?: string | null;
+  meta?: string | null;
   created_at: ISODate;
 }
 
@@ -267,4 +284,5 @@ export interface DataState {
   templates: MessageTemplate[];
   automationRules: AutomationRule[];
   aiScores: AiLeadScore[];
+  auditLog: AuditLogEntry[];
 }

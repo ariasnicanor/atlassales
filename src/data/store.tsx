@@ -4,10 +4,12 @@ import {
   useContext,
   useEffect,
   useMemo,
+  useRef,
   useState,
   type ReactNode,
 } from "react";
 import type {
+  AuditLogEntry,
   Client,
   Company,
   DataState,
@@ -19,63 +21,76 @@ import type {
   FinancialSimulation,
   Task,
   User,
-  AutomationRule,
+  UserRole,
 } from "@/types";
 import { buildSeedState } from "./seed";
 import { uid } from "@/lib/utils";
 
-const STORAGE_KEY = "atlas-sales-os:data:v1";
+const STORAGE_KEY = "atlas-sales-os:data:v2";
 
 function loadState(): DataState {
   if (typeof window === "undefined") return buildSeedState();
   try {
     const raw = window.localStorage.getItem(STORAGE_KEY);
-    if (raw) return JSON.parse(raw) as DataState;
+    if (raw) {
+      const parsed = JSON.parse(raw) as DataState;
+      // Migración suave: si el usuario abrió v1, aseguramos campos nuevos.
+      if (!parsed.auditLog) parsed.auditLog = [];
+      return parsed;
+    }
   } catch {
     /* ignore */
   }
   return buildSeedState();
 }
 
+interface AuditInput {
+  action: string;
+  resource: string;
+  resource_id?: string | null;
+  meta?: string | null;
+}
+
 interface DataContextValue extends DataState {
-  // Company / branding
   updateCompany: (patch: Partial<Company>) => void;
-  // Leads
   createLead: (input: Partial<Lead>) => Lead;
   updateLead: (id: string, patch: Partial<Lead>) => void;
   deleteLead: (id: string) => void;
   addInteraction: (input: Omit<LeadInteraction, "id" | "created_at">) => void;
-  // Clients
   createClient: (input: Partial<Client>) => Client;
   updateClient: (id: string, patch: Partial<Client>) => void;
-  // Products
   createProduct: (input: Partial<Product>) => Product;
   updateProduct: (id: string, patch: Partial<Product>) => void;
-  // Tasks
   createTask: (input: Partial<Task>) => Task;
   updateTask: (id: string, patch: Partial<Task>) => void;
   toggleTaskComplete: (id: string) => void;
   deleteTask: (id: string) => void;
-  // Users
   updateUser: (id: string, patch: Partial<User>) => void;
-  // Quotes & simulations
+  registerUser: (input: {
+    name: string;
+    email: string;
+    password_hash: string;
+    role?: UserRole;
+  }) => User;
   createQuote: (input: Partial<Quote>) => Quote;
   updateQuote: (id: string, patch: Partial<Quote>) => void;
   createSimulation: (input: Partial<FinancialSimulation>) => FinancialSimulation;
-  // Templates
   createTemplate: (input: Partial<MessageTemplate>) => MessageTemplate;
   updateTemplate: (id: string, patch: Partial<MessageTemplate>) => void;
   deleteTemplate: (id: string) => void;
-  // Automation
   toggleAutomation: (id: string) => void;
-  // Utils
   resetDemo: () => void;
+  /** Registra un evento en el log de auditoría con el usuario actual. */
+  logAudit: (entry: AuditInput) => void;
+  /** Session pasa el usuario actual acá para que el store lo use en auditoría. */
+  _setActor: (user: User | null) => void;
 }
 
 const DataContext = createContext<DataContextValue | null>(null);
 
 export function DataProvider({ children }: { children: ReactNode }) {
   const [state, setState] = useState<DataState>(loadState);
+  const actorRef = useRef<User | null>(null);
 
   useEffect(() => {
     try {
@@ -87,20 +102,50 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
   const nowIso = () => new Date().toISOString();
 
+  const pushAudit = useCallback(
+    (s: DataState, entry: AuditInput): DataState => {
+      const actor = actorRef.current;
+      const record: AuditLogEntry = {
+        id: uid("audit"),
+        user_id: actor?.id ?? null,
+        user_name: actor?.name ?? "Sistema",
+        action: entry.action,
+        resource: entry.resource,
+        resource_id: entry.resource_id ?? null,
+        meta: entry.meta ?? null,
+        created_at: nowIso(),
+      };
+      return { ...s, auditLog: [record, ...s.auditLog].slice(0, 500) };
+    },
+    []
+  );
+
   const value = useMemo<DataContextValue>(() => {
     const companyId = state.company.id;
+
+    const withAudit = (updater: (s: DataState) => DataState, entry: AuditInput) =>
+      setState((s) => pushAudit(updater(s), entry));
 
     return {
       ...state,
 
+      _setActor: (u) => {
+        actorRef.current = u;
+      },
+
+      logAudit: (entry) => setState((s) => pushAudit(s, entry)),
+
       updateCompany: (patch) =>
-        setState((s) => ({ ...s, company: { ...s.company, ...patch } })),
+        withAudit(
+          (s) => ({ ...s, company: { ...s.company, ...patch } }),
+          { action: "update", resource: "company" }
+        ),
 
       createLead: (input) => {
         const lead: Lead = {
           id: uid("lead"),
           company_id: companyId,
-          assigned_user_id: input.assigned_user_id ?? null,
+          assigned_user_id: input.assigned_user_id ?? actorRef.current?.id ?? null,
           client_id: input.client_id ?? null,
           name: input.name ?? "Sin nombre",
           phone: input.phone ?? null,
@@ -114,32 +159,44 @@ export function DataProvider({ children }: { children: ReactNode }) {
           created_at: nowIso(),
           updated_at: nowIso(),
         };
-        setState((s) => ({ ...s, leads: [lead, ...s.leads] }));
+        withAudit(
+          (s) => ({ ...s, leads: [lead, ...s.leads] }),
+          { action: "create", resource: "lead", resource_id: lead.id, meta: lead.name }
+        );
         return lead;
       },
 
       updateLead: (id, patch) =>
-        setState((s) => ({
-          ...s,
-          leads: s.leads.map((l) =>
-            l.id === id ? { ...l, ...patch, updated_at: nowIso() } : l
-          ),
-        })),
+        withAudit(
+          (s) => ({
+            ...s,
+            leads: s.leads.map((l) =>
+              l.id === id ? { ...l, ...patch, updated_at: nowIso() } : l
+            ),
+          }),
+          { action: "update", resource: "lead", resource_id: id, meta: Object.keys(patch).join(", ") }
+        ),
 
       deleteLead: (id) =>
-        setState((s) => ({ ...s, leads: s.leads.filter((l) => l.id !== id) })),
+        withAudit(
+          (s) => ({ ...s, leads: s.leads.filter((l) => l.id !== id) }),
+          { action: "delete", resource: "lead", resource_id: id }
+        ),
 
       addInteraction: (input) =>
-        setState((s) => ({
-          ...s,
-          interactions: [
-            { ...input, id: uid("int"), created_at: nowIso() },
-            ...s.interactions,
-          ],
-          leads: s.leads.map((l) =>
-            l.id === input.lead_id ? { ...l, updated_at: nowIso() } : l
-          ),
-        })),
+        withAudit(
+          (s) => ({
+            ...s,
+            interactions: [
+              { ...input, id: uid("int"), created_at: nowIso() },
+              ...s.interactions,
+            ],
+            leads: s.leads.map((l) =>
+              l.id === input.lead_id ? { ...l, updated_at: nowIso() } : l
+            ),
+          }),
+          { action: "create", resource: "interaction", resource_id: input.lead_id, meta: input.type }
+        ),
 
       createClient: (input) => {
         const client: Client = {
@@ -153,15 +210,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
           notes: input.notes ?? null,
           created_at: nowIso(),
         };
-        setState((s) => ({ ...s, clients: [client, ...s.clients] }));
+        withAudit(
+          (s) => ({ ...s, clients: [client, ...s.clients] }),
+          { action: "create", resource: "client", resource_id: client.id, meta: client.name }
+        );
         return client;
       },
 
       updateClient: (id, patch) =>
-        setState((s) => ({
-          ...s,
-          clients: s.clients.map((c) => (c.id === id ? { ...c, ...patch } : c)),
-        })),
+        withAudit(
+          (s) => ({
+            ...s,
+            clients: s.clients.map((c) => (c.id === id ? { ...c, ...patch } : c)),
+          }),
+          { action: "update", resource: "client", resource_id: id }
+        ),
 
       createProduct: (input) => {
         const product: Product = {
@@ -186,21 +249,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
           internal_notes: input.internal_notes ?? null,
           created_at: nowIso(),
         };
-        setState((s) => ({ ...s, products: [product, ...s.products] }));
+        withAudit(
+          (s) => ({ ...s, products: [product, ...s.products] }),
+          { action: "create", resource: "product", resource_id: product.id, meta: product.name }
+        );
         return product;
       },
 
       updateProduct: (id, patch) =>
-        setState((s) => ({
-          ...s,
-          products: s.products.map((p) => (p.id === id ? { ...p, ...patch } : p)),
-        })),
+        withAudit(
+          (s) => ({
+            ...s,
+            products: s.products.map((p) => (p.id === id ? { ...p, ...patch } : p)),
+          }),
+          { action: "update", resource: "product", resource_id: id }
+        ),
 
       createTask: (input) => {
         const task: Task = {
           id: uid("task"),
           company_id: companyId,
-          assigned_user_id: input.assigned_user_id ?? null,
+          assigned_user_id: input.assigned_user_id ?? actorRef.current?.id ?? null,
           lead_id: input.lead_id ?? null,
           client_id: input.client_id ?? null,
           title: input.title ?? "Tarea",
@@ -211,34 +280,70 @@ export function DataProvider({ children }: { children: ReactNode }) {
           status: input.status ?? "pendiente",
           created_at: nowIso(),
         };
-        setState((s) => ({ ...s, tasks: [task, ...s.tasks] }));
+        withAudit(
+          (s) => ({ ...s, tasks: [task, ...s.tasks] }),
+          { action: "create", resource: "task", resource_id: task.id, meta: task.title }
+        );
         return task;
       },
 
       updateTask: (id, patch) =>
-        setState((s) => ({
-          ...s,
-          tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
-        })),
+        withAudit(
+          (s) => ({
+            ...s,
+            tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
+          }),
+          { action: "update", resource: "task", resource_id: id }
+        ),
 
       toggleTaskComplete: (id) =>
-        setState((s) => ({
-          ...s,
-          tasks: s.tasks.map((t) =>
-            t.id === id
-              ? { ...t, status: t.status === "completada" ? "pendiente" : "completada" }
-              : t
-          ),
-        })),
+        withAudit(
+          (s) => ({
+            ...s,
+            tasks: s.tasks.map((t) =>
+              t.id === id
+                ? { ...t, status: t.status === "completada" ? "pendiente" : "completada" }
+                : t
+            ),
+          }),
+          { action: "toggle", resource: "task", resource_id: id }
+        ),
 
       deleteTask: (id) =>
-        setState((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== id) })),
+        withAudit(
+          (s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== id) }),
+          { action: "delete", resource: "task", resource_id: id }
+        ),
 
       updateUser: (id, patch) =>
-        setState((s) => ({
-          ...s,
-          users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
-        })),
+        withAudit(
+          (s) => ({
+            ...s,
+            users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
+          }),
+          { action: "update", resource: "user", resource_id: id, meta: Object.keys(patch).join(", ") }
+        ),
+
+      registerUser: (input) => {
+        const user: User = {
+          id: uid("user"),
+          company_id: companyId,
+          name: input.name,
+          email: input.email.toLowerCase(),
+          phone: null,
+          role: input.role ?? "vendedor",
+          avatar_url: null,
+          active: true,
+          supervisor_id: null,
+          password_hash: input.password_hash,
+          created_at: nowIso(),
+        };
+        withAudit(
+          (s) => ({ ...s, users: [...s.users, user] }),
+          { action: "register", resource: "user", resource_id: user.id, meta: user.email }
+        );
+        return user;
+      },
 
       createQuote: (input) => {
         const list = input.list_price ?? 0;
@@ -250,25 +355,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
           lead_id: input.lead_id ?? null,
           client_id: input.client_id ?? null,
           product_id: input.product_id ?? null,
-          user_id: input.user_id ?? "user_v1",
+          user_id: input.user_id ?? actorRef.current?.id ?? "user_v1",
           list_price: list,
           discount,
           expenses,
           trade_in_value: input.trade_in_value ?? 0,
-          final_price: input.final_price ?? list - discount + expenses - (input.trade_in_value ?? 0),
+          final_price:
+            input.final_price ?? list - discount + expenses - (input.trade_in_value ?? 0),
           financing_summary: input.financing_summary ?? null,
           status: input.status ?? "borrador",
           created_at: nowIso(),
         };
-        setState((s) => ({ ...s, quotes: [quote, ...s.quotes] }));
+        withAudit(
+          (s) => ({ ...s, quotes: [quote, ...s.quotes] }),
+          { action: "create", resource: "quote", resource_id: quote.id }
+        );
         return quote;
       },
 
       updateQuote: (id, patch) =>
-        setState((s) => ({
-          ...s,
-          quotes: s.quotes.map((q) => (q.id === id ? { ...q, ...patch } : q)),
-        })),
+        withAudit(
+          (s) => ({
+            ...s,
+            quotes: s.quotes.map((q) => (q.id === id ? { ...q, ...patch } : q)),
+          }),
+          { action: "update", resource: "quote", resource_id: id }
+        ),
 
       createSimulation: (input) => {
         const sim: FinancialSimulation = {
@@ -327,7 +439,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setState(fresh);
       },
     };
-  }, [state]);
+  }, [state, pushAudit]);
 
   return <DataContext.Provider value={value}>{children}</DataContext.Provider>;
 }

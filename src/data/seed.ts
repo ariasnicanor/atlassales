@@ -17,6 +17,8 @@ import type {
   User,
   Quote,
 } from "@/types";
+import { DEMO_PASSWORD_HASH } from "@/lib/auth";
+
 
 // ─────────────────────────────────────────────────────────────
 // Demo seed — "Atlas Demo Company"
@@ -135,6 +137,8 @@ export const demoUsers: User[] = ([
 ] as User[]).map((u, i) => ({
   ...u,
   phone: `+54 9 266 ${String(420100 + i * 137).slice(0, 6)}`,
+  password_hash: DEMO_PASSWORD_HASH,
+  supervisor_id: u.role === "vendedor" ? "user_sup" : null,
 }));
 
 const sellerIds = ["user_v1", "user_v2", "user_v3", "user_v4", "user_v5"];
@@ -564,5 +568,6 @@ export function buildSeedState(): DataState {
     templates: demoTemplates,
     automationRules: demoAutomationRules,
     aiScores: demoAiScores,
+    auditLog: [],
   };
 }

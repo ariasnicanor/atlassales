@@ -35,6 +35,7 @@ export default function Users() {
   const { currentUser } = useSession();
   const { toast } = useToast();
   const isAdmin = can(currentUser, "manage_users");
+  const supervisors = useMemo(() => users.filter((u) => u.role === "supervisor" || u.role === "admin"), [users]);
   const [selected, setSelected] = useState<User | null>(null);
 
   const metricsFor = useMemo(
@@ -100,6 +101,7 @@ export default function Users() {
               user={selected}
               metrics={metricsFor(selected)}
               isAdmin={isAdmin}
+              supervisors={supervisors}
               onSave={(patch) => {
                 updateUser(selected.id, patch);
                 setSelected({ ...selected, ...patch });
@@ -117,17 +119,20 @@ function UserDetail({
   user,
   metrics,
   isAdmin,
+  supervisors,
   onSave,
 }: {
   user: User;
   metrics: { leads: number; won: number; quotes: number; tasksDone: number; sold: number; conversion: number };
   isAdmin: boolean;
+  supervisors: User[];
   onSave: (patch: Partial<User>) => void;
 }) {
   const [email, setEmail] = useState(user.email);
   const [phone, setPhone] = useState(user.phone ?? "");
   const [role, setRole] = useState<UserRole>(user.role);
   const [active, setActive] = useState(user.active);
+  const [supervisorId, setSupervisorId] = useState<string>(user.supervisor_id ?? "");
 
   const stats = [
     { icon: Trophy, label: "Ventas ganadas", value: String(metrics.won), tone: "text-success" },
@@ -184,9 +189,25 @@ function UserDetail({
               </div>
             </Field>
           </div>
+          {role === "vendedor" && (
+            <Field label="Supervisor asignado">
+              <Select value={supervisorId} onChange={(e) => setSupervisorId(e.target.value)}>
+                <option value="">Sin supervisor</option>
+                {supervisors.filter((s) => s.id !== user.id).map((s) => (
+                  <option key={s.id} value={s.id}>{s.name} · {roleLabel(s.role)}</option>
+                ))}
+              </Select>
+            </Field>
+          )}
           <DialogFooter>
             <DialogClose asChild><Button variant="outline">Cerrar</Button></DialogClose>
-            <Button onClick={() => onSave({ email, phone: phone || null, role, active })}>Guardar</Button>
+            <Button onClick={() => onSave({
+              email,
+              phone: phone || null,
+              role,
+              active,
+              supervisor_id: role === "vendedor" ? (supervisorId || null) : null,
+            })}>Guardar</Button>
           </DialogFooter>
         </div>
       ) : (
