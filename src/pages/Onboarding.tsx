@@ -10,12 +10,12 @@ import { PLAN_BY_TIER } from "@/lib/plans";
 export default function Onboarding() {
   const navigate = useNavigate();
   const { company, users } = useData();
-  const { login } = useSession();
+  const { loginAs } = useSession();
 
   const admin = users.find((u) => u.role === "admin") ?? users[0];
 
   const enter = () => {
-    login(admin.id);
+    loginAs(admin.id);
     navigate("/dashboard");
   };
 
