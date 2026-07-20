@@ -12,7 +12,7 @@ import { CreateMenu } from "./CreateMenu";
 import { NotificationsBell } from "./NotificationsBell";
 
 export function Topbar() {
-  const { currentUser, logout, theme, toggleTheme, login } = useSession();
+  const { currentUser, logout, theme, toggleTheme, loginAs } = useSession();
   const { users, company, resetDemo } = useData();
 
   return (

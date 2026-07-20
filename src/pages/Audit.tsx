@@ -10,7 +10,7 @@ import { useData } from "@/data/store";
 import { useSession } from "@/context/session";
 import { can } from "@/lib/permissions";
 import { Navigate } from "react-router-dom";
-import { fmtDate } from "@/lib/date";
+import { fmtDateTime } from "@/lib/date";
 
 export default function Audit() {
   const { auditLog } = useData();
@@ -131,7 +131,7 @@ export default function Audit() {
                 {filtered.map((e) => (
                   <tr key={e.id} className="border-b last:border-b-0">
                     <td className="whitespace-nowrap py-2 pr-3 text-muted-foreground">
-                      {fmtDate(e.created_at, true)}
+                      {fmtDateTime(e.created_at)}
                     </td>
                     <td className="py-2 pr-3 font-medium">{e.user_name}</td>
                     <td className="py-2 pr-3">
