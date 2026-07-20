@@ -24,7 +24,7 @@ import type {
 import { buildSeedState } from "./seed";
 import { uid } from "@/lib/utils";
 
-const STORAGE_KEY = "surf-sales-os:data:v1";
+const STORAGE_KEY = "atlas-sales-os:data:v1";
 
 function loadState(): DataState {
   if (typeof window === "undefined") return buildSeedState();

@@ -19,7 +19,7 @@ import type {
 } from "@/types";
 
 // ─────────────────────────────────────────────────────────────
-// Demo seed — "Demo Company"
+// Demo seed — "Atlas Demo Company"
 // Genera actividad realista de una empresa comercial para que la
 // app se vea vendible apenas se abre. Fechas relativas a hoy.
 // ─────────────────────────────────────────────────────────────
@@ -46,11 +46,11 @@ function offset(days: number, hours = 9) {
 }
 const period = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 
-const COMPANY_ID = "comp_surf_demo";
+const COMPANY_ID = "comp_atlas_demo";
 
 export const demoCompany: Company = {
   id: COMPANY_ID,
-  name: "Demo Company",
+  name: "Atlas Demo Company",
   logo_url: null,
   primary_color: "#0EA5E9",
   secondary_color: "#7C3AED",
@@ -66,7 +66,7 @@ export const demoUsers: User[] = ([
     id: "user_admin",
     company_id: COMPANY_ID,
     name: "Diego Sandoval",
-    email: "diego@surfdemo.com",
+    email: "diego@tuempresa.com",
     role: "admin",
     avatar_url: null,
     active: true,
@@ -76,7 +76,7 @@ export const demoUsers: User[] = ([
     id: "user_sup",
     company_id: COMPANY_ID,
     name: "Carolina Ruiz",
-    email: "carolina@surfdemo.com",
+    email: "carolina@tuempresa.com",
     role: "supervisor",
     avatar_url: null,
     active: true,
@@ -86,7 +86,7 @@ export const demoUsers: User[] = ([
     id: "user_v1",
     company_id: COMPANY_ID,
     name: "Martín Pereyra",
-    email: "martin@surfdemo.com",
+    email: "martin@tuempresa.com",
     role: "vendedor",
     avatar_url: null,
     active: true,
@@ -96,7 +96,7 @@ export const demoUsers: User[] = ([
     id: "user_v2",
     company_id: COMPANY_ID,
     name: "Lucía Gómez",
-    email: "lucia@surfdemo.com",
+    email: "lucia@tuempresa.com",
     role: "vendedor",
     avatar_url: null,
     active: true,
@@ -106,7 +106,7 @@ export const demoUsers: User[] = ([
     id: "user_v3",
     company_id: COMPANY_ID,
     name: "Federico Aguirre",
-    email: "federico@surfdemo.com",
+    email: "federico@tuempresa.com",
     role: "vendedor",
     avatar_url: null,
     active: true,
@@ -116,7 +116,7 @@ export const demoUsers: User[] = ([
     id: "user_v4",
     company_id: COMPANY_ID,
     name: "Sofía Navarro",
-    email: "sofia@surfdemo.com",
+    email: "sofia@tuempresa.com",
     role: "vendedor",
     avatar_url: null,
     active: true,
@@ -126,7 +126,7 @@ export const demoUsers: User[] = ([
     id: "user_v5",
     company_id: COMPANY_ID,
     name: "Julián Costa",
-    email: "julian@surfdemo.com",
+    email: "julian@tuempresa.com",
     role: "vendedor",
     avatar_url: null,
     active: false,
