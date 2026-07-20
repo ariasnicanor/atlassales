@@ -10,8 +10,8 @@ import {
 import type { User } from "@/types";
 import { useData } from "@/data/store";
 
-const SESSION_KEY = "surf-sales-os:session:v1";
-const THEME_KEY = "surf-sales-os:theme:v1";
+const SESSION_KEY = "atlas-sales-os:session:v1";
+const THEME_KEY = "atlas-sales-os:theme:v1";
 
 interface SessionContextValue {
   currentUser: User | null;
