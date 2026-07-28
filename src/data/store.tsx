@@ -26,6 +26,35 @@ import type {
 import { buildSeedState } from "./seed";
 import { uid } from "@/lib/utils";
 import { AUTO_CLOSE_DAYS, daysWithoutManagement, CLOSED_STATUSES } from "@/lib/lead-management";
+import { pushEventToGoogle, removeEventFromGoogle, getConnection } from "@/lib/google-calendar";
+
+function syncTaskToGCal(task: Task) {
+  if (typeof window === "undefined") return;
+  const userId = task.assigned_user_id;
+  if (!userId) return;
+  if (getConnection(userId).status !== "connected") return;
+  const start = task.due_time ? `${task.due_date}T${task.due_time}` : `${task.due_date}T09:00`;
+  pushEventToGoogle(userId, {
+    id: task.id,
+    source: task.lead_id ? "crm-followup" : "crm-task",
+    title: task.title,
+    description: task.description ?? undefined,
+    start: new Date(start).toISOString(),
+    lead_id: task.lead_id ?? null,
+  });
+}
+
+function removeTaskFromGCal(taskId: string) {
+  if (typeof window === "undefined") return;
+  // Broadcast: remove from any connected user's mirror.
+  for (let i = 0; i < localStorage.length; i++) {
+    const key = localStorage.key(i);
+    if (key?.startsWith("atlas-sales-os:gcal:")) {
+      const userId = key.split(":").pop()!;
+      removeEventFromGoogle(userId, taskId);
+    }
+  }
+}
 
 const STORAGE_KEY = "atlas-sales-os:data:v3";
 
