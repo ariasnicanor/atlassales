@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { MORE_GROUPS, itemAllowedForUser } from "@/lib/nav";
+import { getProfileSections } from "@/lib/nav";
 import { usePlan } from "@/hooks/usePlan";
 import { useSession } from "@/context/session";
 
@@ -23,6 +23,8 @@ export function MoreMenu({ trigger }: { trigger: ReactNode }) {
     navigate(path);
   };
 
+  const groups = getProfileSections(currentUser);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>{trigger}</DialogTrigger>
@@ -32,8 +34,8 @@ export function MoreMenu({ trigger }: { trigger: ReactNode }) {
         </DialogHeader>
 
         <div className="space-y-5">
-          {MORE_GROUPS.map((group) => {
-            const items = group.items.filter((i) => itemAllowedForUser(i, currentUser));
+          {groups.map((group) => {
+            const items = group.items;
             if (items.length === 0) return null;
             return (
               <div key={group.title}>
