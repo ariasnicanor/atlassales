@@ -221,10 +221,27 @@ export function DataProvider({ children }: { children: ReactNode }) {
       createLead: (input) => {
         const now = nowIso();
         const utm = getStoredUtm();
+        // Auto-asignación según distribución configurada, si no vino explícito.
+        let assignedId = input.assigned_user_id ?? null;
+        let rrAdvance: number | null = null;
+        let assignReason: string | null = null;
+        if (!assignedId) {
+          // Import from module (top-level import already declares it below).
+          const { pickAssignee } = require("@/lib/lead-distribution") as typeof import("@/lib/lead-distribution");
+          const result = pickAssignee(input, state.leadDistribution, state.users);
+          assignedId = result.user_id;
+          assignReason = result.reason;
+          if (result.reason === "round_robin") rrAdvance = result.next_pointer;
+        }
+        // Si sigue sin asignar, usar el actor como último recurso (caso login vendedor creando lead propio).
+        if (!assignedId && actorRef.current?.role === "vendedor") {
+          assignedId = actorRef.current.id;
+          assignReason = assignReason ?? "manual";
+        }
         const lead: Lead = {
           id: uid("lead"),
           company_id: companyId,
-          assigned_user_id: input.assigned_user_id ?? actorRef.current?.id ?? null,
+          assigned_user_id: assignedId,
           client_id: input.client_id ?? null,
           name: input.name ?? "Sin nombre",
           phone: input.phone ?? null,
@@ -247,9 +264,25 @@ export function DataProvider({ children }: { children: ReactNode }) {
           created_at: now,
           updated_at: now,
         };
+        const assigneeName = assignedId
+          ? state.users.find((u) => u.id === assignedId)?.name ?? null
+          : null;
         withAudit(
-          (s) => ({ ...s, leads: [lead, ...s.leads] }),
-          { action: "create", resource: "lead", resource_id: lead.id, meta: lead.name }
+          (s) => {
+            const nextDistribution =
+              rrAdvance !== null
+                ? { ...s.leadDistribution, rr_pointer: rrAdvance }
+                : s.leadDistribution;
+            return { ...s, leads: [lead, ...s.leads], leadDistribution: nextDistribution };
+          },
+          {
+            action: "create",
+            resource: "lead",
+            resource_id: lead.id,
+            meta: assigneeName
+              ? `${lead.name} → ${assigneeName} (${assignReason ?? "auto"})`
+              : lead.name,
+          }
         );
         // Disparar conversión si el lead vino de una campaña rastreable.
         const fromCampaign = Boolean(lead.utm_source || lead.gclid || lead.fbclid);
