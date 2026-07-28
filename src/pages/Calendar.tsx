@@ -81,7 +81,7 @@ export default function CalendarPage() {
   const [selected, setSelected] = useState<CalEvent | null>(null);
   const [cursor, setCursor] = useState(() => startOfDay(new Date()));
   const { users, leads } = useData();
-  const { tasks, interactions } = useScopedData();
+  const { tasks, interactions, leads: scopedLeads } = useScopedData();
   const { currentUser } = useSession();
 
   const visibleUserIds = useMemo(() => {
