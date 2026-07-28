@@ -16,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useData } from "@/data/store";
 import { useSession } from "@/context/session";
+import { hasFeature } from "@/lib/features";
 import { useToast } from "@/components/ui/toast";
 import { OPEN_PIPELINE } from "@/lib/lead-management";
 import { LEAD_STATUS_LABEL } from "@/lib/labels";
