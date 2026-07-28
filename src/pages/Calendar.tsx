@@ -42,7 +42,7 @@ interface CalEvent {
   leadName?: string;
   /** Título original de la actividad (usado como fallback). */
   title: string;
-  kind: "task" | "followup" | "interaction" | "google";
+  kind: "task" | "followup" | "interaction" | "nextcontact" | "google";
   href?: string;
   /** Nota, mensaje o descripción — información secundaria. */
   note?: string;
