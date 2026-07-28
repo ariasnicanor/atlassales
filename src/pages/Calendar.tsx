@@ -64,6 +64,7 @@ const KIND_COLOR: Record<CalEvent["kind"], string> = {
   task: "bg-blue-500",
   followup: "bg-amber-500",
   interaction: "bg-emerald-500",
+  nextcontact: "bg-rose-500",
   google: "bg-purple-500",
 };
 
@@ -71,6 +72,7 @@ const KIND_LABEL: Record<CalEvent["kind"], string> = {
   task: "Tarea",
   followup: "Seguimiento",
   interaction: "Gestión",
+  nextcontact: "Próximo contacto",
   google: "Google Calendar",
 };
 
