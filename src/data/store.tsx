@@ -27,6 +27,7 @@ import { buildSeedState } from "./seed";
 import { uid } from "@/lib/utils";
 import { AUTO_CLOSE_DAYS, daysWithoutManagement, CLOSED_STATUSES } from "@/lib/lead-management";
 import { pushEventToGoogle, removeEventFromGoogle, getConnection } from "@/lib/google-calendar";
+import { getStoredUtm, fireLeadConversion, clearStoredUtm } from "@/lib/tracking";
 
 function syncTaskToGCal(task: Task) {
   if (typeof window === "undefined") return;
@@ -209,6 +210,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       createLead: (input) => {
         const now = nowIso();
+        const utm = getStoredUtm();
         const lead: Lead = {
           id: uid("lead"),
           company_id: companyId,
@@ -217,13 +219,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
           name: input.name ?? "Sin nombre",
           phone: input.phone ?? null,
           email: input.email ?? null,
-          source: input.source ?? "Web",
+          source: input.source ?? utm?.utm_source ?? "Web",
           status: input.status ?? "nuevo",
           temperature: input.temperature ?? "tibio",
           product_interest: input.product_interest ?? null,
           next_contact_at: input.next_contact_at ?? null,
           notes: input.notes ?? null,
           last_management_at: now,
+          utm_source: input.utm_source ?? utm?.utm_source ?? null,
+          utm_medium: input.utm_medium ?? utm?.utm_medium ?? null,
+          utm_campaign: input.utm_campaign ?? utm?.utm_campaign ?? null,
+          utm_term: input.utm_term ?? utm?.utm_term ?? null,
+          utm_content: input.utm_content ?? utm?.utm_content ?? null,
+          gclid: input.gclid ?? utm?.gclid ?? null,
+          fbclid: input.fbclid ?? utm?.fbclid ?? null,
+          landing_url: input.landing_url ?? utm?.landing_url ?? null,
           created_at: now,
           updated_at: now,
         };
@@ -231,6 +241,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
           (s) => ({ ...s, leads: [lead, ...s.leads] }),
           { action: "create", resource: "lead", resource_id: lead.id, meta: lead.name }
         );
+        // Disparar conversión si el lead vino de una campaña rastreable.
+        const fromCampaign = Boolean(lead.utm_source || lead.gclid || lead.fbclid);
+        if (fromCampaign) {
+          fireLeadConversion({
+            lead_id: lead.id,
+            name: lead.name,
+            email: lead.email,
+            phone: lead.phone,
+            source: lead.utm_source ?? lead.source,
+          });
+          clearStoredUtm();
+        }
         return lead;
       },
 
