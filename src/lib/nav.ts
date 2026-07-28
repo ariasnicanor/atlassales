@@ -74,6 +74,12 @@ export const MORE_GROUPS: NavGroup[] = [
     ],
   },
   {
+    title: "Canales",
+    items: [
+      { label: "WhatsApp", path: "/whatsapp", icon: MessageCircle, moduleKey: "whatsapp", tier: "core" },
+    ],
+  },
+  {
     title: "Growth",
     items: [
       { label: "Cotizador", path: "/growth/quoter", icon: FileText, moduleKey: "quoter", tier: "growth" },
