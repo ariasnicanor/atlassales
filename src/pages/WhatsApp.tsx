@@ -456,17 +456,15 @@ export default function WhatsAppPage() {
 
                 <div className="space-y-1.5">
                   <label className="text-xs font-medium text-muted-foreground">Estado</label>
-                  <Select value={activeLead.status} onValueChange={(v) => changeStatus(v as LeadStatus)}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {[...OPEN_PIPELINE, "vendido", ...CLOSED_STATUSES.filter((s) => s !== "vendido")].map((s) => (
-                        <SelectItem key={s} value={s}>
-                          {LEAD_STATUS_LABEL[s as LeadStatus]}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
+                  <Select
+                    value={activeLead.status}
+                    onChange={(e) => changeStatus(e.target.value as LeadStatus)}
+                  >
+                    {[...OPEN_PIPELINE, "vendido", ...CLOSED_STATUSES.filter((s) => s !== "vendido")].map((s) => (
+                      <option key={s} value={s}>
+                        {LEAD_STATUS_LABEL[s as LeadStatus]}
+                      </option>
+                    ))}
                   </Select>
                 </div>
 
