@@ -18,6 +18,7 @@ import type {
   MessageTemplate,
   Product,
   Quote,
+  RemarketingRequest,
   FinancialSimulation,
   Task,
   User,
@@ -131,6 +132,14 @@ interface DataContextValue extends DataState {
   updateDistributionConfig: (patch: Partial<import("@/types").LeadDistributionConfig>) => void;
   /** Registra un evento en el log de auditoría con el usuario actual. */
   logAudit: (entry: AuditInput) => void;
+  /** Un vendedor solicita recuperar un lead que cayó en Remarketing. */
+  requestRemarketingLead: (leadId: string, note?: string | null) => void;
+  /** Supervisor/Admin aprueba o rechaza la solicitud. */
+  resolveRemarketingRequest: (
+    id: string,
+    status: "aprobada" | "rechazada",
+    note?: string | null
+  ) => void;
   /** Session pasa el usuario actual acá para que el store lo use en auditoría. */
   _setActor: (user: User | null) => void;
 }
