@@ -13,6 +13,12 @@ import type {
 export const LEAD_STATUS_LABEL: Record<LeadStatus, string> = {
   nuevo: "Nuevo",
   contactado: "Contactado",
+  en_negociacion: "En negociación",
+  proximo_a_vender: "Próximo a vender",
+  vendido: "Vendido",
+  sin_gestion: "Sin gestión",
+  cerrado: "Cerrado",
+  // Legacy
   en_seguimiento: "En seguimiento",
   cotizado: "Cotizado",
   negociacion: "Negociación",
@@ -23,17 +29,23 @@ export const LEAD_STATUS_LABEL: Record<LeadStatus, string> = {
 export const LEAD_STATUS_ORDER: LeadStatus[] = [
   "nuevo",
   "contactado",
-  "en_seguimiento",
-  "cotizado",
-  "negociacion",
-  "ganado",
-  "perdido",
+  "en_negociacion",
+  "proximo_a_vender",
+  "vendido",
+  "sin_gestion",
+  "cerrado",
 ];
 
 /** Tailwind classes for the pipeline column accent of each status. */
 export const LEAD_STATUS_ACCENT: Record<LeadStatus, string> = {
   nuevo: "bg-sky-500",
   contactado: "bg-indigo-500",
+  en_negociacion: "bg-violet-500",
+  proximo_a_vender: "bg-amber-500",
+  vendido: "bg-emerald-500",
+  sin_gestion: "bg-orange-500",
+  cerrado: "bg-rose-500",
+  // Legacy
   en_seguimiento: "bg-violet-500",
   cotizado: "bg-amber-500",
   negociacion: "bg-orange-500",

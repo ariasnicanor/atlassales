@@ -8,6 +8,12 @@ export const leadSchema = z.object({
   status: z.enum([
     "nuevo",
     "contactado",
+    "en_negociacion",
+    "proximo_a_vender",
+    "vendido",
+    "sin_gestion",
+    "cerrado",
+    // Legacy
     "en_seguimiento",
     "cotizado",
     "negociacion",

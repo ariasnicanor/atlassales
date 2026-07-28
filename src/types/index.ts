@@ -118,6 +118,8 @@ export interface Lead {
   product_interest?: string | null;
   next_contact_at?: ISODate | null;
   notes?: string | null;
+  /** Última gestión registrada (mensaje, llamada, nota o cambio de estado). */
+  last_management_at?: ISODate | null;
   created_at: ISODate;
   updated_at: ISODate;
 }
