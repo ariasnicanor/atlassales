@@ -95,8 +95,10 @@ export default function Settings() {
         badge={<Badge variant="secondary"><Palette className="size-3" /> Core</Badge>}
       />
 
-      {currentUser && <IntegrationsSection userId={currentUser.id} userEmail={currentUser.email ?? ""} />}
-      {isAdmin && <PixelSection />}
+      {currentUser && hasFeature(currentUser, "integrations") && <IntegrationsSection userId={currentUser.id} userEmail={currentUser.email ?? ""} />}
+      {hasFeature(currentUser, "pixel_config") && <PixelSection />}
+      {isAdmin && <FeatureOverridesSection />}
+
 
 
       {/* Mi perfil */}
