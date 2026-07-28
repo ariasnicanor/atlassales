@@ -108,4 +108,11 @@ export function itemAllowed(item: NavItem, role: UserRole | undefined) {
   return role ? item.roles.includes(role) : false;
 }
 
+/** Filtra por rol + feature toggle (Admin puede bloquear features por usuario). */
+export function itemAllowedForUser(item: NavItem, user: User | null | undefined) {
+  if (!itemAllowed(item, user?.role)) return false;
+  if (item.feature && !hasFeature(user, item.feature)) return false;
+  return true;
+}
+
 export { Plus };
