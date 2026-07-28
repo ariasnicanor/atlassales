@@ -78,6 +78,8 @@ export interface User {
   password_hash?: string | null;
   /** Overrides por-usuario sobre la matriz de rol. */
   permission_overrides?: Partial<Record<string, string[]>>;
+  /** Toggles finos por-usuario (Admin → Configuración → Funciones). true=habilitar, false=bloquear. */
+  feature_overrides?: Record<string, boolean>;
   created_at: ISODate;
 }
 
