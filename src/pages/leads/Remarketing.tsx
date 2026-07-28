@@ -23,11 +23,16 @@ type FollowState = "todos" | "programado" | "vencido" | "sin_seguimiento";
 
 export default function Remarketing() {
   const { leads } = useScopedData();
-  const { users, interactions, updateLead } = useData();
+  const { users, interactions, updateLead, remarketingRequests, resolveRemarketingRequest } = useData();
   const { currentUser } = useSession();
   const { toast } = useToast();
 
   const canAssign = can(currentUser, "assign", "remarketing");
+  const canApprove = can(currentUser, "approve", "remarketing");
+  const pendingRequests = useMemo(
+    () => remarketingRequests.filter((r) => r.status === "pendiente"),
+    [remarketingRequests]
+  );
 
   const [search, setSearch] = useState("");
   const [seller, setSeller] = useState("todos");
@@ -103,6 +108,53 @@ export default function Remarketing() {
           <CardContent className="p-3 text-sm">
             <span className="font-medium">{unassigned}</span> contacto(s) de Remarketing sin responsable —
             asignalos manualmente desde cada tarjeta.
+          </CardContent>
+        </Card>
+      )}
+
+      {canApprove && pendingRequests.length > 0 && (
+        <Card className="border-amber-500/40 bg-amber-500/5">
+          <CardContent className="space-y-3 p-4">
+            <p className="text-sm font-semibold">
+              Solicitudes de recuperación pendientes ({pendingRequests.length})
+            </p>
+            {pendingRequests.map((r) => (
+              <div
+                key={r.id}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border bg-background p-3 text-sm"
+              >
+                <div className="min-w-0">
+                  <Link to={`/leads/${r.lead_id}`} className="font-medium hover:underline">
+                    {r.lead_name}
+                  </Link>
+                  <p className="text-xs text-muted-foreground">
+                    Solicitado por {r.requested_by_name} · {fmtDateTime(r.created_at)}
+                  </p>
+                  {r.note && <p className="text-xs text-muted-foreground">“{r.note}”</p>}
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    onClick={() => {
+                      resolveRemarketingRequest(r.id, "aprobada");
+                      toast(`${r.lead_name} reasignado a ${r.requested_by_name}`);
+                    }}
+                  >
+                    Aprobar
+                  </Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={() => {
+                      resolveRemarketingRequest(r.id, "rechazada");
+                      toast("Solicitud rechazada");
+                    }}
+                  >
+                    Rechazar
+                  </Button>
+                </div>
+              </div>
+            ))}
           </CardContent>
         </Card>
       )}
