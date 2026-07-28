@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
-import { Plus, Search, LayoutGrid, Columns3, Flame, SlidersHorizontal, X } from "lucide-react";
+import { Plus, Search, LayoutGrid, Columns3, Flame, SlidersHorizontal, X, Upload } from "lucide-react";
+import { useSession } from "@/context/session";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -30,6 +31,8 @@ export default function Leads() {
   const [params, setParams] = useSearchParams();
   const { leads, seeAll } = useScopedData();
   const { users } = useData();
+  const { currentUser } = useSession();
+  const canImport = currentUser?.role === "admin" || currentUser?.role === "supervisor";
 
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
@@ -79,9 +82,19 @@ export default function Leads() {
         title="Leads"
         description="Tu pipeline comercial. Filtrá, seguí y no pierdas oportunidades."
         actions={
-          <Button onClick={() => navigate("/leads/new")} size="icon" aria-label="Nuevo lead">
-            <Plus className="size-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {canImport && (
+              <Button variant="outline" asChild size="sm">
+                <Link to="/leads/import" aria-label="Importar leads">
+                  <Upload className="size-4" />
+                  <span className="hidden sm:inline">Importar</span>
+                </Link>
+              </Button>
+            )}
+            <Button onClick={() => navigate("/leads/new")} size="icon" aria-label="Nuevo lead">
+              <Plus className="size-4" />
+            </Button>
+          </div>
         }
       />
 

@@ -11,6 +11,7 @@ import Onboarding from "@/pages/Onboarding";
 import Audit from "@/pages/Audit";
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/leads/Leads";
+import LeadsImport from "@/pages/leads/LeadsImport";
 import LeadDetail from "@/pages/leads/LeadDetail";
 import LeadForm from "@/pages/leads/LeadForm";
 import Clients from "@/pages/clients/Clients";
@@ -43,6 +44,7 @@ function AppRoutes() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/leads" element={<Leads />} />
+        <Route path="/leads/import" element={<LeadsImport />} />
         <Route path="/leads/new" element={<LeadForm />} />
         <Route path="/leads/:id" element={<LeadDetail />} />
         <Route path="/leads/:id/edit" element={<LeadForm />} />
