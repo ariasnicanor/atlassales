@@ -20,6 +20,12 @@ type Variant = React.ComponentProps<typeof Badge>["variant"];
 const leadVariant: Record<LeadStatus, Variant> = {
   nuevo: "default",
   contactado: "secondary",
+  en_negociacion: "warning",
+  proximo_a_vender: "warning",
+  vendido: "success",
+  sin_gestion: "destructive",
+  cerrado: "muted",
+  // Legacy
   en_seguimiento: "secondary",
   cotizado: "warning",
   negociacion: "warning",

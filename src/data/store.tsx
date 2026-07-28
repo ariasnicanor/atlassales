@@ -25,8 +25,9 @@ import type {
 } from "@/types";
 import { buildSeedState } from "./seed";
 import { uid } from "@/lib/utils";
+import { AUTO_CLOSE_DAYS, daysWithoutManagement, CLOSED_STATUSES } from "@/lib/lead-management";
 
-const STORAGE_KEY = "atlas-sales-os:data:v2";
+const STORAGE_KEY = "atlas-sales-os:data:v3";
 
 function loadState(): DataState {
   if (typeof window === "undefined") return buildSeedState();
@@ -34,8 +35,12 @@ function loadState(): DataState {
     const raw = window.localStorage.getItem(STORAGE_KEY);
     if (raw) {
       const parsed = JSON.parse(raw) as DataState;
-      // Migración suave: si el usuario abrió v1, aseguramos campos nuevos.
       if (!parsed.auditLog) parsed.auditLog = [];
+      // Aseguramos last_management_at para datos previos.
+      parsed.leads = parsed.leads.map((l) => ({
+        ...l,
+        last_management_at: l.last_management_at ?? l.updated_at ?? l.created_at,
+      }));
       return parsed;
     }
   } catch {
@@ -100,6 +105,38 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
+  // Auto-cierre: leads sin gestión >= AUTO_CLOSE_DAYS pasan a "cerrado".
+  useEffect(() => {
+    const sweep = () => {
+      setState((s) => {
+        const stale = s.leads.filter(
+          (l) => !CLOSED_STATUSES.includes(l.status) && daysWithoutManagement(l) >= AUTO_CLOSE_DAYS
+        );
+        if (stale.length === 0) return s;
+        const staleIds = new Set(stale.map((l) => l.id));
+        const now = new Date().toISOString();
+        const leads = s.leads.map((l) =>
+          staleIds.has(l.id) ? { ...l, status: "cerrado" as const, updated_at: now } : l
+        );
+        const auditEntries: AuditLogEntry[] = stale.map((l) => ({
+          id: uid("audit"),
+          user_id: null,
+          user_name: "Sistema",
+          action: "auto_close",
+          resource: "lead",
+          resource_id: l.id,
+          meta: `Sin gestión hace ${daysWithoutManagement(l)}d`,
+          created_at: now,
+        }));
+        return { ...s, leads, auditLog: [...auditEntries, ...s.auditLog].slice(0, 500) };
+      });
+    };
+    sweep();
+    const t = window.setInterval(sweep, 60 * 60 * 1000);
+    return () => window.clearInterval(t);
+  }, []);
+
+
   const nowIso = () => new Date().toISOString();
 
   const pushAudit = useCallback(
@@ -142,6 +179,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         ),
 
       createLead: (input) => {
+        const now = nowIso();
         const lead: Lead = {
           id: uid("lead"),
           company_id: companyId,
@@ -156,8 +194,9 @@ export function DataProvider({ children }: { children: ReactNode }) {
           product_interest: input.product_interest ?? null,
           next_contact_at: input.next_contact_at ?? null,
           notes: input.notes ?? null,
-          created_at: nowIso(),
-          updated_at: nowIso(),
+          last_management_at: now,
+          created_at: now,
+          updated_at: now,
         };
         withAudit(
           (s) => ({ ...s, leads: [lead, ...s.leads] }),
@@ -170,9 +209,19 @@ export function DataProvider({ children }: { children: ReactNode }) {
         withAudit(
           (s) => ({
             ...s,
-            leads: s.leads.map((l) =>
-              l.id === id ? { ...l, ...patch, updated_at: nowIso() } : l
-            ),
+            leads: s.leads.map((l) => {
+              if (l.id !== id) return l;
+              const now = nowIso();
+              // Si el patch trae explícitamente last_management_at (ej. auto-cierre),
+              // lo respetamos; si no, cualquier edición manual cuenta como gestión.
+              const bumpMgmt = patch.last_management_at === undefined;
+              return {
+                ...l,
+                ...patch,
+                updated_at: now,
+                last_management_at: bumpMgmt ? now : patch.last_management_at ?? l.last_management_at,
+              };
+            }),
           }),
           { action: "update", resource: "lead", resource_id: id, meta: Object.keys(patch).join(", ") }
         ),
@@ -185,16 +234,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       addInteraction: (input) =>
         withAudit(
-          (s) => ({
-            ...s,
-            interactions: [
-              { ...input, id: uid("int"), created_at: nowIso() },
-              ...s.interactions,
-            ],
-            leads: s.leads.map((l) =>
-              l.id === input.lead_id ? { ...l, updated_at: nowIso() } : l
-            ),
-          }),
+          (s) => {
+            const now = nowIso();
+            return {
+              ...s,
+              interactions: [
+                { ...input, id: uid("int"), created_at: now },
+                ...s.interactions,
+              ],
+              leads: s.leads.map((l) =>
+                l.id === input.lead_id
+                  ? { ...l, updated_at: now, last_management_at: now }
+                  : l
+              ),
+            };
+          },
           { action: "create", resource: "interaction", resource_id: input.lead_id, meta: input.type }
         ),
 

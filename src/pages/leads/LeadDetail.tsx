@@ -31,6 +31,8 @@ import { whatsappLink, telLink, mailLink } from "@/lib/contact";
 import { formatCurrency } from "@/lib/utils";
 import { fmtDate, fmtDateTime, fromNow } from "@/lib/date";
 import { LEAD_STATUS_LABEL, LEAD_STATUS_ORDER, INTERACTION_LABEL } from "@/lib/labels";
+import { daysWithoutManagement, stalenessInfo, isClosed } from "@/lib/lead-management";
+import { cn } from "@/lib/utils";
 import type { InteractionType, LeadStatus, Temperature } from "@/types";
 
 export default function LeadDetail() {
@@ -141,7 +143,42 @@ export default function LeadDetail() {
               <Row label="Origen" value={lead.source} />
               <Row label="Vendedor" value={seller?.name ?? "Sin asignar"} />
               <Row label="Creado" value={fmtDate(lead.created_at)} />
-              <Row label="Actualizado" value={fromNow(lead.updated_at)} />
+              <Row label="Última gestión" value={fromNow(lead.last_management_at ?? lead.updated_at)} />
+              {(() => {
+                const days = daysWithoutManagement(lead);
+                const stale = stalenessInfo(days);
+                return (
+                  <div className={cn("flex items-center gap-2 rounded-lg bg-muted/40 px-3 py-2 text-xs font-medium", stale.className)}>
+                    <span className={cn("size-2 rounded-full", stale.dotClass)} aria-hidden />
+                    {stale.label}
+                  </div>
+                );
+              })()}
+              {isClosed(lead) && (
+                <div className="space-y-2 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-3 text-xs">
+                  <p className="font-medium text-foreground">Lead cerrado — acciones de remarketing</p>
+                  <p className="text-muted-foreground">Reactivalo a una etapa anterior o marcalo para campaña.</p>
+                  <div className="flex flex-wrap gap-2">
+                    <Button size="sm" variant="outline" onClick={() => changeStatus("contactado")}>Reactivar a Contactado</Button>
+                    <Button size="sm" variant="outline" onClick={() => changeStatus("en_negociacion")}>Volver a Negociación</Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        addInteraction({
+                          lead_id: lead.id,
+                          user_id: currentUser?.id ?? "user_v1",
+                          type: "nota",
+                          note: "Incluido en campaña de remarketing.",
+                        });
+                        toast("Marcado para remarketing");
+                      }}
+                    >
+                      Enviar a remarketing
+                    </Button>
+                  </div>
+                </div>
+              )}
               {lead.notes && (
                 <div className="rounded-lg bg-muted/60 p-3 text-muted-foreground">{lead.notes}</div>
               )}

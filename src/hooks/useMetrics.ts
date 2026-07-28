@@ -16,10 +16,10 @@ export function useMetrics() {
   return useMemo(() => {
     const leadsNuevos = leads.filter((l) => l.status === "nuevo").length;
     const enSeguimiento = leads.filter((l) =>
-      ["contactado", "en_seguimiento", "cotizado", "negociacion"].includes(l.status)
+      ["contactado", "en_negociacion", "proximo_a_vender"].includes(l.status)
     ).length;
     const calientes = leads.filter(
-      (l) => l.temperature === "caliente" && !["ganado", "perdido"].includes(l.status)
+      (l) => l.temperature === "caliente" && !["vendido", "cerrado"].includes(l.status)
     ).length;
 
     const tareasVencidas = tasks.filter(
@@ -34,27 +34,29 @@ export function useMetrics() {
     const ventasCerradasMes = ventasMes.length;
     const montoVendidoMes = ventasMes.reduce((acc, s) => acc + s.amount, 0);
 
-    const cerrados = leads.filter((l) => ["ganado", "perdido"].includes(l.status));
-    const ganados = leads.filter((l) => l.status === "ganado");
+    const cerrados = leads.filter((l) => ["vendido", "cerrado"].includes(l.status));
+    const ganados = leads.filter((l) => l.status === "vendido");
     const conversion = cerrados.length ? ganados.length / cerrados.length : 0;
 
     // Leads que necesitan atención (motor de "seguimiento optimizado")
     const needsAttention: { lead: Lead; reason: string }[] = [];
     leads.forEach((l) => {
-      if (["ganado", "perdido"].includes(l.status)) return;
+      if (["vendido", "cerrado"].includes(l.status)) return;
       if (l.status === "nuevo") {
         needsAttention.push({ lead: l, reason: "Lead nuevo sin contactar" });
       } else if (l.next_contact_at && isOverdue(l.next_contact_at)) {
         needsAttention.push({ lead: l, reason: "Seguimiento vencido" });
       } else if (l.temperature === "caliente" && daysSince(l.updated_at) >= 2) {
         needsAttention.push({ lead: l, reason: "Lead caliente sin actividad" });
-      } else if (l.status === "cotizado" && daysSince(l.updated_at) >= 2) {
-        needsAttention.push({ lead: l, reason: "Cotización sin respuesta" });
+      } else if (l.status === "proximo_a_vender" && daysSince(l.updated_at) >= 2) {
+        needsAttention.push({ lead: l, reason: "Próximo a vender sin respuesta" });
+      } else if (l.status === "sin_gestion") {
+        needsAttention.push({ lead: l, reason: "Lead sin gestión, retomar contacto" });
       }
     });
 
     const hotLeads = leads
-      .filter((l) => l.temperature === "caliente" && !["ganado", "perdido"].includes(l.status))
+      .filter((l) => l.temperature === "caliente" && !["vendido", "cerrado"].includes(l.status))
       .slice(0, 6);
 
     return {

@@ -11,6 +11,12 @@ export type UserRole = "admin" | "supervisor" | "vendedor";
 export type LeadStatus =
   | "nuevo"
   | "contactado"
+  | "en_negociacion"
+  | "proximo_a_vender"
+  | "vendido"
+  | "sin_gestion"
+  | "cerrado"
+  // Valores legacy tolerados para datos preexistentes.
   | "en_seguimiento"
   | "cotizado"
   | "negociacion"
@@ -112,6 +118,8 @@ export interface Lead {
   product_interest?: string | null;
   next_contact_at?: ISODate | null;
   notes?: string | null;
+  /** Última gestión registrada (mensaje, llamada, nota o cambio de estado). */
+  last_management_at?: ISODate | null;
   created_at: ISODate;
   updated_at: ISODate;
 }
