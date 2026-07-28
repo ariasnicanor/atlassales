@@ -592,5 +592,12 @@ export function buildSeedState(): DataState {
     automationRules: demoAutomationRules,
     aiScores: demoAiScores,
     auditLog: [],
+    leadDistribution: {
+      mode: "round_robin",
+      rr_pointer: 0,
+      rules: [],
+      fallback_user_id: null,
+    },
   };
 }
+
