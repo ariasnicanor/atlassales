@@ -123,6 +123,8 @@ interface DataContextValue extends DataState {
   deleteTemplate: (id: string) => void;
   toggleAutomation: (id: string) => void;
   resetDemo: () => void;
+  /** Actualiza la configuración de distribución de leads. */
+  updateDistributionConfig: (patch: Partial<import("@/types").LeadDistributionConfig>) => void;
   /** Registra un evento en el log de auditoría con el usuario actual. */
   logAudit: (entry: AuditInput) => void;
   /** Session pasa el usuario actual acá para que el store lo use en auditoría. */
