@@ -145,6 +145,29 @@ export default function CalendarPage() {
         color: KIND_COLOR.interaction,
       });
     }
+    // Gestión rápida: próximos contactos programados en la ficha del lead
+    for (const l of scopedLeads) {
+      if (!l.next_contact_at) continue;
+      const d = parseISO(l.next_contact_at);
+      if (isNaN(d.getTime())) continue;
+      list.push({
+        id: `next-${l.id}`,
+        date: d,
+        time: undefined,
+        leadName: l.name,
+        leadId: l.id,
+        leadPhone: l.phone ?? null,
+        leadProduct: l.product_interest ?? null,
+        statusLabel: LEAD_STATUS_LABEL[l.status],
+        note: l.notes ?? "Próximo contacto programado desde Gestión rápida",
+        title: `Próximo contacto · ${l.name}`,
+        kind: "nextcontact",
+        href: `/leads/${l.id}`,
+        meta: l.product_interest ?? undefined,
+        ownerName: l.assigned_user_id ? userById.get(l.assigned_user_id)?.name : undefined,
+        color: KIND_COLOR.nextcontact,
+      });
+    }
     // Google Calendar (para cada usuario visible conectado)
     if (typeof window !== "undefined") {
       const seen = new Set<string>();
