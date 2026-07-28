@@ -99,6 +99,7 @@ export default function Settings() {
 
       {currentUser && hasFeature(currentUser, "integrations") && <IntegrationsSection userId={currentUser.id} userEmail={currentUser.email ?? ""} />}
       {hasFeature(currentUser, "pixel_config") && <PixelSection />}
+      {(currentUser?.role === "admin" || currentUser?.role === "supervisor") && <LeadDistributionSection />}
       {isAdmin && <FeatureOverridesSection />}
 
 
