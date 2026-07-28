@@ -67,6 +67,7 @@ function loadState(): DataState {
     if (raw) {
       const parsed = JSON.parse(raw) as DataState;
       if (!parsed.auditLog) parsed.auditLog = [];
+      if (!parsed.remarketingRequests) parsed.remarketingRequests = [];
       if (!parsed.leadDistribution) {
         parsed.leadDistribution = {
           mode: "round_robin",
