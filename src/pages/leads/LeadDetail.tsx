@@ -188,9 +188,39 @@ export default function LeadDetail() {
                       Sin responsable: visible para administración y recepción para asignación manual.
                     </p>
                   )}
-                  <Button asChild size="sm" variant="outline" className="mt-1">
-                    <Link to="/remarketing">Ver bandeja de Remarketing</Link>
-                  </Button>
+                  {canViewRemarketing ? (
+                    <Button asChild size="sm" variant="outline" className="mt-1">
+                      <Link to="/remarketing">Ver bandeja de Remarketing</Link>
+                    </Button>
+                  ) : canRequestRemarketing ? (
+                    pendingRequest ? (
+                      <p className="mt-1 rounded-md bg-muted/60 px-2 py-1.5 text-muted-foreground">
+                        Solicitud enviada el {fmtDateTime(pendingRequest.created_at)} — pendiente de
+                        aprobación por supervisión.
+                      </p>
+                    ) : (
+                      <div className="mt-1 space-y-2">
+                        <Textarea
+                          rows={2}
+                          placeholder="Motivo de la solicitud (opcional)"
+                          value={requestNote}
+                          onChange={(e) => setRequestNote(e.target.value)}
+                        />
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="w-full"
+                          onClick={() => {
+                            requestRemarketingLead(lead.id, requestNote.trim() || null);
+                            setRequestNote("");
+                            toast("Solicitud enviada a supervisión");
+                          }}
+                        >
+                          Solicitar recuperar este lead
+                        </Button>
+                      </div>
+                    )
+                  ) : null}
                 </div>
               )}
               {lead.status !== "remarketing" && !isClosed(lead) && (
