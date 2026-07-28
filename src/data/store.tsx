@@ -66,6 +66,14 @@ function loadState(): DataState {
     if (raw) {
       const parsed = JSON.parse(raw) as DataState;
       if (!parsed.auditLog) parsed.auditLog = [];
+      if (!parsed.leadDistribution) {
+        parsed.leadDistribution = {
+          mode: "round_robin",
+          rr_pointer: 0,
+          rules: [],
+          fallback_user_id: null,
+        };
+      }
       // Aseguramos last_management_at para datos previos.
       parsed.leads = parsed.leads.map((l) => ({
         ...l,
