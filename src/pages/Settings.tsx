@@ -93,7 +93,11 @@ export default function Settings() {
     <div className="space-y-6">
       <PageHeader
         title="Configuración"
-        description="Gestioná tu perfil y, si sos admin, la identidad de la empresa."
+        description={
+          currentUser?.role === "recepcion"
+            ? "Configuración operativa: tu perfil, notificaciones, calendario y firma de mensajes."
+            : "Gestioná tu perfil y, si sos admin, la identidad de la empresa."
+        }
         badge={<Badge variant="secondary"><Palette className="size-3" /> Core</Badge>}
       />
 
@@ -130,6 +134,8 @@ export default function Settings() {
           </div>
         </CardContent>
       </Card>
+
+      {currentUser && <OperativeSection userId={currentUser.id} />}
 
       {/* Branding empresa: solo admin */}
       {isAdmin ? (
@@ -665,3 +671,101 @@ function ModeCard({ active, title, desc, onClick }: { active: boolean; title: st
   );
 }
 
+
+
+// ─────────────────────────────────────────────────────────────
+// Configuración operativa (disponible para todos los perfiles,
+// incluida Recepción, que no accede a la config administrativa).
+// ─────────────────────────────────────────────────────────────
+
+interface OperativePrefs {
+  notify_new_leads: boolean;
+  notify_followups: boolean;
+  calendar_default_view: "day" | "week" | "month";
+  signature: string;
+}
+
+const OP_DEFAULTS: OperativePrefs = {
+  notify_new_leads: true,
+  notify_followups: true,
+  calendar_default_view: "week",
+  signature: "",
+};
+
+function opKey(userId: string) {
+  return `atlas-sales-os:op-prefs:${userId}`;
+}
+
+function OperativeSection({ userId }: { userId: string }) {
+  const { toast } = useToast();
+  const [prefs, setPrefs] = useState<OperativePrefs>(() => {
+    if (typeof window === "undefined") return OP_DEFAULTS;
+    try {
+      const raw = window.localStorage.getItem(opKey(userId));
+      return raw ? { ...OP_DEFAULTS, ...JSON.parse(raw) } : OP_DEFAULTS;
+    } catch {
+      return OP_DEFAULTS;
+    }
+  });
+
+  const save = () => {
+    try {
+      window.localStorage.setItem(opKey(userId), JSON.stringify(prefs));
+    } catch {
+      /* ignore */
+    }
+    toast("Preferencias operativas guardadas");
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Bell className="size-5 text-primary" /> Preferencias operativas
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span>Notificarme cuando ingresa un lead nuevo</span>
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={prefs.notify_new_leads}
+            onChange={(e) => setPrefs((p) => ({ ...p, notify_new_leads: e.target.checked }))}
+          />
+        </label>
+        <label className="flex items-center justify-between gap-3 text-sm">
+          <span>Recordarme los seguimientos del día</span>
+          <input
+            type="checkbox"
+            className="size-4"
+            checked={prefs.notify_followups}
+            onChange={(e) => setPrefs((p) => ({ ...p, notify_followups: e.target.checked }))}
+          />
+        </label>
+        <Field label="Vista inicial del calendario">
+          <Select
+            value={prefs.calendar_default_view}
+            onChange={(e) =>
+              setPrefs((p) => ({ ...p, calendar_default_view: e.target.value as OperativePrefs["calendar_default_view"] }))
+            }
+          >
+            <option value="day">Día</option>
+            <option value="week">Semana</option>
+            <option value="month">Mes</option>
+          </Select>
+        </Field>
+        <Field label="Firma para mensajes" hint="Se agrega al final de los mensajes de WhatsApp/email">
+          <Input
+            value={prefs.signature}
+            onChange={(e) => setPrefs((p) => ({ ...p, signature: e.target.value }))}
+            placeholder="Ej: Martín — Atención al cliente"
+          />
+        </Field>
+        <div className="flex justify-end">
+          <Button onClick={save}><Save className="size-4" /> Guardar preferencias</Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
