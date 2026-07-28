@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { MORE_GROUPS, itemAllowed } from "@/lib/nav";
+import { MORE_GROUPS, itemAllowedForUser } from "@/lib/nav";
 import { usePlan } from "@/hooks/usePlan";
 import { useSession } from "@/context/session";
 
