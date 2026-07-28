@@ -33,6 +33,7 @@ import AiAssist from "@/pages/premium/AiAssist";
 import AiAgent from "@/pages/premium/AiAgent";
 import Plans from "@/pages/Plans";
 import NotFound from "@/pages/NotFound";
+import WhatsAppPage from "@/pages/WhatsApp";
 
 function AppRoutes() {
   return (
@@ -53,6 +54,7 @@ function AppRoutes() {
         <Route path="/stock" element={<Stock />} />
         <Route path="/stock/:id" element={<ProductDetail />} />
         <Route path="/tasks" element={<Tasks />} />
+        <Route path="/whatsapp" element={<WhatsAppPage />} />
         <Route path="/users" element={<Users />} />
         <Route path="/audit" element={<Audit />} />
         <Route path="/reports" element={<Reports />} />

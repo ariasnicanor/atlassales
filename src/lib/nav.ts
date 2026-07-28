@@ -14,6 +14,7 @@ import {
   Target,
   Trophy,
   MessageSquareText,
+  MessageCircle,
   Zap,
   Sparkles,
   Bot,
@@ -70,6 +71,12 @@ export const MORE_GROUPS: NavGroup[] = [
       { label: "Clientes", path: "/clients", icon: Contact, moduleKey: "clients", tier: "core", roles: ["admin"] },
       { label: "Auditoría", path: "/audit", icon: ShieldCheck, moduleKey: "audit", tier: "core", roles: ["admin"] },
       { label: "Configuración", path: "/settings", icon: Settings, moduleKey: "settings", tier: "core" },
+    ],
+  },
+  {
+    title: "Canales",
+    items: [
+      { label: "WhatsApp", path: "/whatsapp", icon: MessageCircle, moduleKey: "whatsapp", tier: "core" },
     ],
   },
   {
