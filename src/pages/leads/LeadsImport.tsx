@@ -199,7 +199,7 @@ export default function LeadsImport() {
       let sellerId: string | null = null;
       if (sellerRaw) {
         sellerId = sellerLookup.get(normalize(sellerRaw)) ?? null;
-        if (!sellerId) warnings.push(`Vendedor "${sellerRaw}" no encontrado, quedará sin asignar`);
+        if (!sellerId) warnings.push(`Vendedor "${sellerRaw}" no encontrado, se asignará según distribución`);
       }
 
       // Duplicados: dentro del propio archivo + contra existentes
