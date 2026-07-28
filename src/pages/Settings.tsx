@@ -88,6 +88,8 @@ export default function Settings() {
         badge={<Badge variant="secondary"><Palette className="size-3" /> Core</Badge>}
       />
 
+      {currentUser && <IntegrationsSection userId={currentUser.id} userEmail={currentUser.email ?? ""} />}
+
       {/* Mi perfil */}
       <Card>
         <CardHeader>
