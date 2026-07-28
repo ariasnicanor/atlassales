@@ -8,7 +8,7 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { MORE_GROUPS, itemAllowed } from "@/lib/nav";
+import { MORE_GROUPS, itemAllowedForUser } from "@/lib/nav";
 import { usePlan } from "@/hooks/usePlan";
 import { useSession } from "@/context/session";
 
@@ -33,7 +33,7 @@ export function MoreMenu({ trigger }: { trigger: ReactNode }) {
 
         <div className="space-y-5">
           {MORE_GROUPS.map((group) => {
-            const items = group.items.filter((i) => itemAllowed(i, currentUser?.role));
+            const items = group.items.filter((i) => itemAllowedForUser(i, currentUser));
             if (items.length === 0) return null;
             return (
               <div key={group.title}>

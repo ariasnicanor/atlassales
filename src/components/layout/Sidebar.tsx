@@ -1,6 +1,6 @@
 import { NavLink, Link } from "react-router-dom";
 import { Lock, Waves, Sparkles } from "lucide-react";
-import { PRIMARY_NAV, MORE_GROUPS, itemAllowed, type NavItem } from "@/lib/nav";
+import { PRIMARY_NAV, MORE_GROUPS, itemAllowedForUser, type NavItem } from "@/lib/nav";
 import { useData } from "@/data/store";
 import { usePlan } from "@/hooks/usePlan";
 import { useSession } from "@/context/session";
@@ -15,7 +15,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     { title: "Core", items: PRIMARY_NAV },
     ...MORE_GROUPS.map((g) => ({
       title: g.title,
-      items: g.items.filter((i) => itemAllowed(i, currentUser?.role)),
+      items: g.items.filter((i) => itemAllowedForUser(i, currentUser)),
     })),
   ].filter((s) => s.items.length > 0);
 

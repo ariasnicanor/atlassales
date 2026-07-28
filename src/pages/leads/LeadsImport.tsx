@@ -16,6 +16,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { useData } from "@/data/store";
 import { useSession } from "@/context/session";
+import { hasFeature } from "@/lib/features";
 import { useToast } from "@/components/ui/toast";
 import { OPEN_PIPELINE } from "@/lib/lead-management";
 import { LEAD_STATUS_LABEL } from "@/lib/labels";
@@ -80,7 +81,7 @@ export default function LeadsImport() {
   const [importing, setImporting] = useState(false);
 
   const role = currentUser?.role;
-  const canImport = role === "admin" || role === "supervisor";
+  const canImport = hasFeature(currentUser, "import_leads");
 
   const sellers = useMemo(
     () => users.filter((u) => u.active !== false && u.role === "vendedor"),

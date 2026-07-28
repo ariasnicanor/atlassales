@@ -21,7 +21,8 @@ import {
   Plus,
   type LucideIcon,
 } from "lucide-react";
-import type { PlanTier, UserRole } from "@/types";
+import type { PlanTier, User, UserRole } from "@/types";
+import { hasFeature } from "@/lib/features";
 
 export interface NavItem {
   label: string;
@@ -31,6 +32,8 @@ export interface NavItem {
   tier: PlanTier;
   /** Si se define, solo estos roles ven el item. Si no, todos. */
   roles?: UserRole[];
+  /** Feature toggle opcional (Admin puede des/habilitar por usuario). */
+  feature?: string;
 }
 
 /** Barra inferior fija (mobile) — igual para todos los roles. */
@@ -65,17 +68,17 @@ export const MORE_GROUPS: NavGroup[] = [
   {
     title: "Gestión",
     items: [
-      { label: "Reportes", path: "/reports", icon: BarChart3, moduleKey: "reports", tier: "core", roles: ["admin", "supervisor"] },
+      { label: "Reportes", path: "/reports", icon: BarChart3, moduleKey: "reports", tier: "core", roles: ["admin", "supervisor"], feature: "view_reports" },
       { label: "Usuarios", path: "/users", icon: UsersRound, moduleKey: "users", tier: "core", roles: ["admin", "supervisor"] },
       { label: "Clientes", path: "/clients", icon: Contact, moduleKey: "clients", tier: "core", roles: ["admin"] },
-      { label: "Auditoría", path: "/audit", icon: ShieldCheck, moduleKey: "audit", tier: "core", roles: ["admin"] },
+      { label: "Auditoría", path: "/audit", icon: ShieldCheck, moduleKey: "audit", tier: "core", roles: ["admin"], feature: "view_audit" },
       { label: "Configuración", path: "/settings", icon: Settings, moduleKey: "settings", tier: "core", roles: ["admin", "supervisor", "vendedor"] },
     ],
   },
   {
     title: "Canales",
     items: [
-      { label: "WhatsApp", path: "/whatsapp", icon: MessageCircle, moduleKey: "whatsapp", tier: "core" },
+      { label: "WhatsApp", path: "/whatsapp", icon: MessageCircle, moduleKey: "whatsapp", tier: "core", feature: "whatsapp" },
     ],
   },
   {
@@ -103,6 +106,13 @@ export const MORE_GROUPS: NavGroup[] = [
 export function itemAllowed(item: NavItem, role: UserRole | undefined) {
   if (!item.roles) return true;
   return role ? item.roles.includes(role) : false;
+}
+
+/** Filtra por rol + feature toggle (Admin puede bloquear features por usuario). */
+export function itemAllowedForUser(item: NavItem, user: User | null | undefined) {
+  if (!itemAllowed(item, user?.role)) return false;
+  if (item.feature && !hasFeature(user, item.feature)) return false;
+  return true;
 }
 
 export { Plus };

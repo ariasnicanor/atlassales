@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { Plus, Search, LayoutGrid, Columns3, Flame, SlidersHorizontal, X, Upload } from "lucide-react";
 import { useSession } from "@/context/session";
+import { hasFeature } from "@/lib/features";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -32,7 +33,7 @@ export default function Leads() {
   const { leads, seeAll } = useScopedData();
   const { users } = useData();
   const { currentUser } = useSession();
-  const canImport = currentUser?.role === "admin" || currentUser?.role === "supervisor";
+  const canImport = hasFeature(currentUser, "import_leads");
 
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
