@@ -42,7 +42,7 @@ interface CalEvent {
   leadName?: string;
   /** Título original de la actividad (usado como fallback). */
   title: string;
-  kind: "task" | "followup" | "interaction" | "google";
+  kind: "task" | "followup" | "interaction" | "nextcontact" | "google";
   href?: string;
   /** Nota, mensaje o descripción — información secundaria. */
   note?: string;
@@ -64,6 +64,7 @@ const KIND_COLOR: Record<CalEvent["kind"], string> = {
   task: "bg-blue-500",
   followup: "bg-amber-500",
   interaction: "bg-emerald-500",
+  nextcontact: "bg-rose-500",
   google: "bg-purple-500",
 };
 
@@ -71,6 +72,7 @@ const KIND_LABEL: Record<CalEvent["kind"], string> = {
   task: "Tarea",
   followup: "Seguimiento",
   interaction: "Gestión",
+  nextcontact: "Próximo contacto",
   google: "Google Calendar",
 };
 
@@ -79,7 +81,7 @@ export default function CalendarPage() {
   const [selected, setSelected] = useState<CalEvent | null>(null);
   const [cursor, setCursor] = useState(() => startOfDay(new Date()));
   const { users, leads } = useData();
-  const { tasks, interactions } = useScopedData();
+  const { tasks, interactions, leads: scopedLeads } = useScopedData();
   const { currentUser } = useSession();
 
   const visibleUserIds = useMemo(() => {
@@ -143,6 +145,29 @@ export default function CalendarPage() {
         color: KIND_COLOR.interaction,
       });
     }
+    // Gestión rápida: próximos contactos programados en la ficha del lead
+    for (const l of scopedLeads) {
+      if (!l.next_contact_at) continue;
+      const d = parseISO(l.next_contact_at);
+      if (isNaN(d.getTime())) continue;
+      list.push({
+        id: `next-${l.id}`,
+        date: d,
+        time: undefined,
+        leadName: l.name,
+        leadId: l.id,
+        leadPhone: l.phone ?? null,
+        leadProduct: l.product_interest ?? null,
+        statusLabel: LEAD_STATUS_LABEL[l.status],
+        note: l.notes ?? "Próximo contacto programado desde Gestión rápida",
+        title: `Próximo contacto · ${l.name}`,
+        kind: "nextcontact",
+        href: `/leads/${l.id}`,
+        meta: l.product_interest ?? undefined,
+        ownerName: l.assigned_user_id ? userById.get(l.assigned_user_id)?.name : undefined,
+        color: KIND_COLOR.nextcontact,
+      });
+    }
     // Google Calendar (para cada usuario visible conectado)
     if (typeof window !== "undefined") {
       const seen = new Set<string>();
@@ -177,7 +202,7 @@ export default function CalendarPage() {
       }
     }
     return list.sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [tasks, interactions, leadById, userById, visibleUserIds]);
+  }, [tasks, interactions, scopedLeads, leadById, userById, visibleUserIds]);
 
   const rangeLabel = useMemo(() => {
     if (view === "day") return format(cursor, "EEEE d 'de' MMMM yyyy", { locale: es });

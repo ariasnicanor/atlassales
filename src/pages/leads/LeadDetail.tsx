@@ -11,6 +11,7 @@ import {
   Send,
   Sparkles,
   CalendarClock,
+  CalendarPlus,
   Trash2,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
@@ -34,7 +35,7 @@ import { LEAD_STATUS_LABEL, LEAD_STATUS_ORDER, INTERACTION_LABEL } from "@/lib/l
 import { daysWithoutManagement, stalenessInfo, isClosed } from "@/lib/lead-management";
 import { cn } from "@/lib/utils";
 import { can } from "@/lib/permissions";
-import type { InteractionType, LeadStatus, Temperature } from "@/types";
+import type { InteractionType, LeadStatus, Temperature, TaskPriority } from "@/types";
 
 export default function LeadDetail() {
   const { id } = useParams();
@@ -49,6 +50,7 @@ export default function LeadDetail() {
     products,
     updateLead,
     addInteraction,
+    createTask,
     deleteLead,
     remarketingRequests,
     requestRemarketingLead,
@@ -61,6 +63,11 @@ export default function LeadDetail() {
   const [intType, setIntType] = useState<InteractionType>("llamada");
   const [intNote, setIntNote] = useState("");
   const [requestNote, setRequestNote] = useState("");
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDesc, setTaskDesc] = useState("");
+  const [taskDate, setTaskDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [taskTime, setTaskTime] = useState("09:00");
+  const [taskPriority, setTaskPriority] = useState<TaskPriority>("media");
 
   const canViewRemarketing = can(currentUser, "view", "remarketing");
   const canRequestRemarketing = can(currentUser, "request", "remarketing");
@@ -118,6 +125,35 @@ export default function LeadDetail() {
     setIntNote("");
     toast("Interacción registrada");
   };
+
+  const submitTask = () => {
+    const title = taskTitle.trim() || `Contactar a ${lead.name}`;
+    if (!taskDate) {
+      toast("Elegí una fecha para la tarea", "warning");
+      return;
+    }
+    createTask({
+      lead_id: lead.id,
+      assigned_user_id: lead.assigned_user_id ?? currentUser?.id ?? null,
+      title,
+      description: taskDesc.trim() || null,
+      due_date: taskDate,
+      due_time: taskTime || null,
+      priority: taskPriority,
+      status: "pendiente",
+    });
+    addInteraction({
+      lead_id: lead.id,
+      user_id: currentUser?.id ?? "user_v1",
+      type: "nota",
+      note: `Tarea creada: ${title} — ${taskDate}${taskTime ? ` ${taskTime}` : ""}`,
+    });
+    setTaskTitle("");
+    setTaskDesc("");
+    toast("Tarea creada y agendada en el calendario");
+  };
+
+
 
   const handleDelete = () => {
     if (confirm(`¿Eliminar el lead "${lead.name}"?`)) {
@@ -394,6 +430,57 @@ export default function LeadDetail() {
 
         {/* Columna derecha: interacciones */}
         <div className="space-y-6 lg:col-span-2">
+          <Card>
+            <CardHeader><CardTitle>Nueva tarea</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Título">
+                  <input
+                    className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    placeholder={`Llamar a ${lead.name}`}
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                  />
+                </Field>
+                <Field label="Prioridad">
+                  <Select value={taskPriority} onChange={(e) => setTaskPriority(e.target.value as TaskPriority)}>
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                  </Select>
+                </Field>
+                <Field label="Fecha">
+                  <input
+                    type="date"
+                    className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    value={taskDate}
+                    onChange={(e) => setTaskDate(e.target.value)}
+                  />
+                </Field>
+                <Field label="Hora">
+                  <input
+                    type="time"
+                    className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    value={taskTime}
+                    onChange={(e) => setTaskTime(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <Textarea
+                rows={2}
+                placeholder="Detalle de la tarea (opcional)"
+                value={taskDesc}
+                onChange={(e) => setTaskDesc(e.target.value)}
+              />
+              <div className="flex justify-end">
+                <Button onClick={submitTask}><CalendarPlus className="size-4" /> Crear tarea</Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                La tarea se suma al historial de interacciones y aparece en el calendario con el nombre del lead.
+              </p>
+            </CardContent>
+          </Card>
+
           <Card>
             <CardHeader><CardTitle>Registrar interacción</CardTitle></CardHeader>
             <CardContent className="space-y-3">
