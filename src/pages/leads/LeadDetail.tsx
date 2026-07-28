@@ -34,7 +34,7 @@ import { LEAD_STATUS_LABEL, LEAD_STATUS_ORDER, INTERACTION_LABEL } from "@/lib/l
 import { daysWithoutManagement, stalenessInfo, isClosed } from "@/lib/lead-management";
 import { cn } from "@/lib/utils";
 import { can } from "@/lib/permissions";
-import type { InteractionType, LeadStatus, Temperature } from "@/types";
+import type { InteractionType, LeadStatus, Temperature, TaskPriority } from "@/types";
 
 export default function LeadDetail() {
   const { id } = useParams();
