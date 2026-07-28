@@ -20,6 +20,8 @@ import {
 } from "@/components/ui/dialog";
 import { UpgradeGate } from "@/components/commercial/UpgradeGate";
 import { useData } from "@/data/store";
+import { useSession } from "@/context/session";
+import { can } from "@/lib/permissions";
 import { useToast } from "@/components/ui/toast";
 import { copyToClipboard } from "@/lib/contact";
 import { TEMPLATE_CATEGORY_LABEL } from "@/lib/labels";
@@ -34,6 +36,9 @@ interface FormVals {
 function TemplatesInner() {
   const { templates, createTemplate, deleteTemplate } = useData();
   const { toast } = useToast();
+  const { currentUser } = useSession();
+  const canCreate = can(currentUser, "create", "templates");
+  const canDelete = can(currentUser, "delete", "templates");
   const [open, setOpen] = useState(false);
   const { register, handleSubmit, reset } = useForm<FormVals>({
     defaultValues: { category: "seguimiento", title: "", body: "" },
@@ -49,7 +54,7 @@ function TemplatesInner() {
   return (
     <div className="space-y-4">
       <div className="flex justify-end">
-        <Dialog open={open} onOpenChange={setOpen}>
+        {canCreate && <Dialog open={open} onOpenChange={setOpen}>
           <DialogTrigger asChild><Button><Plus className="size-4" /> Nueva plantilla</Button></DialogTrigger>
           <DialogContent>
             <DialogHeader><DialogTitle>Nueva plantilla</DialogTitle></DialogHeader>
@@ -69,7 +74,7 @@ function TemplatesInner() {
               </DialogFooter>
             </form>
           </DialogContent>
-        </Dialog>
+        </Dialog>}
       </div>
 
       <div className="grid gap-4 sm:grid-cols-2">
@@ -80,9 +85,11 @@ function TemplatesInner() {
                 <CardTitle className="text-base">{t.title}</CardTitle>
                 <Badge variant="secondary" className="mt-1">{TEMPLATE_CATEGORY_LABEL[t.category]}</Badge>
               </div>
-              <Button variant="ghost" size="icon" onClick={() => { deleteTemplate(t.id); toast("Plantilla eliminada"); }} aria-label="Eliminar">
-                <Trash2 className="size-4" />
-              </Button>
+              {canDelete && (
+                <Button variant="ghost" size="icon" onClick={() => { deleteTemplate(t.id); toast("Plantilla eliminada"); }} aria-label="Eliminar">
+                  <Trash2 className="size-4" />
+                </Button>
+              )}
             </CardHeader>
             <CardContent className="space-y-3">
               <p className="whitespace-pre-wrap rounded-lg bg-muted/60 p-3 text-sm text-muted-foreground">{t.body}</p>
