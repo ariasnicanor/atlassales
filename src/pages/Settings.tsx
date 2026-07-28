@@ -1,5 +1,5 @@
-import { useState } from "react";
-import { Waves, Palette, Save, RotateCcw, UserRound, Lock } from "lucide-react";
+import { useEffect, useState } from "react";
+import { Waves, Palette, Save, RotateCcw, UserRound, Lock, Calendar, RefreshCw, Link2, Unlink } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -12,6 +12,14 @@ import { useData } from "@/data/store";
 import { useSession } from "@/context/session";
 import { useToast } from "@/components/ui/toast";
 import { can, roleLabel } from "@/lib/permissions";
+import {
+  getConnection,
+  connectGoogleCalendar,
+  disconnectGoogleCalendar,
+  hasRealCredentials,
+  pullEventsFromGoogle,
+  type GCalConnection,
+} from "@/lib/google-calendar";
 
 const INDUSTRIES = [
   "Concesionaria",
