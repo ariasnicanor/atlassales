@@ -11,6 +11,7 @@ import Onboarding from "@/pages/Onboarding";
 import Audit from "@/pages/Audit";
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/leads/Leads";
+import LeadsImport from "@/pages/leads/LeadsImport";
 import LeadDetail from "@/pages/leads/LeadDetail";
 import LeadForm from "@/pages/leads/LeadForm";
 import Clients from "@/pages/clients/Clients";
