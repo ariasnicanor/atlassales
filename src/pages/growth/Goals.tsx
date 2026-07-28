@@ -129,8 +129,8 @@ function GoalsInner() {
         </Card>
       )}
 
-      <div className={seeTeam ? "grid gap-4 sm:grid-cols-2" : "grid gap-4"}>
-        {rows.map(({ goal, user, achieved, progress }) => {
+      <div className="grid gap-4 sm:grid-cols-2">
+        {(seeTeam ? rows : []).map(({ goal, user, achieved, progress }) => {
           const tone = progressTone(progress);
           const remaining = Math.max(0, goal.target_amount - achieved);
           return (
