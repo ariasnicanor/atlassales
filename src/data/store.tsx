@@ -105,6 +105,38 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
+  // Auto-cierre: leads sin gestión >= AUTO_CLOSE_DAYS pasan a "cerrado".
+  useEffect(() => {
+    const sweep = () => {
+      setState((s) => {
+        const stale = s.leads.filter(
+          (l) => !CLOSED_STATUSES.includes(l.status) && daysWithoutManagement(l) >= AUTO_CLOSE_DAYS
+        );
+        if (stale.length === 0) return s;
+        const staleIds = new Set(stale.map((l) => l.id));
+        const now = new Date().toISOString();
+        const leads = s.leads.map((l) =>
+          staleIds.has(l.id) ? { ...l, status: "cerrado" as const, updated_at: now } : l
+        );
+        const auditEntries: AuditLogEntry[] = stale.map((l) => ({
+          id: uid("audit"),
+          user_id: null,
+          user_name: "Sistema",
+          action: "auto_close",
+          resource: "lead",
+          resource_id: l.id,
+          meta: `Sin gestión hace ${daysWithoutManagement(l)}d`,
+          created_at: now,
+        }));
+        return { ...s, leads, auditLog: [...auditEntries, ...s.auditLog].slice(0, 500) };
+      });
+    };
+    sweep();
+    const t = window.setInterval(sweep, 60 * 60 * 1000);
+    return () => window.clearInterval(t);
+  }, []);
+
+
   const nowIso = () => new Date().toISOString();
 
   const pushAudit = useCallback(
