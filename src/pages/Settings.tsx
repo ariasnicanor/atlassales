@@ -506,3 +506,162 @@ function FeatureOverridesSection() {
   );
 }
 
+// ─────────────────────────────────────────────────────────────
+// Distribución de leads (Admin + Supervisor)
+// ─────────────────────────────────────────────────────────────
+function LeadDistributionSection() {
+  const { leadDistribution, users, updateDistributionConfig } = useData();
+  const { toast } = useToast();
+
+  const activeSellers = useMemo(
+    () => users.filter((u) => u.role === "vendedor" && u.active),
+    [users]
+  );
+
+  const setMode = (mode: "round_robin" | "manual" | "rules") => {
+    updateDistributionConfig({ mode });
+    toast("Modo de distribución actualizado");
+  };
+
+  const setFallback = (id: string) => {
+    updateDistributionConfig({ fallback_user_id: id || null });
+  };
+
+  const addRule = () => {
+    const first = activeSellers[0];
+    if (!first) return toast("Necesitás al menos un vendedor activo");
+    updateDistributionConfig({
+      rules: [
+        ...leadDistribution.rules,
+        {
+          id: `rule_${Date.now()}`,
+          field: "source",
+          match: "",
+          user_id: first.id,
+        },
+      ],
+    });
+  };
+
+  const updateRule = (id: string, patch: Partial<typeof leadDistribution.rules[number]>) => {
+    updateDistributionConfig({
+      rules: leadDistribution.rules.map((r) => (r.id === id ? { ...r, ...patch } : r)),
+    });
+  };
+
+  const deleteRule = (id: string) => {
+    updateDistributionConfig({ rules: leadDistribution.rules.filter((r) => r.id !== id) });
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Shuffle className="size-5 text-primary" /> Distribución de leads
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-5">
+        <p className="text-sm text-muted-foreground">
+          Cuando entra un lead nuevo (manual, importación masiva o campaña) sin vendedor asignado,
+          el sistema aplica esta regla para asignarlo automáticamente.
+        </p>
+
+        <div className="grid gap-2 sm:grid-cols-3">
+          <ModeCard
+            active={leadDistribution.mode === "round_robin"}
+            title="Round-robin"
+            desc="Rota entre vendedores activos."
+            onClick={() => setMode("round_robin")}
+          />
+          <ModeCard
+            active={leadDistribution.mode === "manual"}
+            title="Manual"
+            desc="Recepción / Supervisor asigna a mano."
+            onClick={() => setMode("manual")}
+          />
+          <ModeCard
+            active={leadDistribution.mode === "rules"}
+            title="Por reglas"
+            desc="Por origen, campaña o producto."
+            onClick={() => setMode("rules")}
+          />
+        </div>
+
+        {leadDistribution.mode === "round_robin" && (
+          <div className="rounded-lg border bg-muted/30 p-3 text-sm">
+            <p className="font-medium">Vendedores en la rotación ({activeSellers.length})</p>
+            <p className="mt-1 text-muted-foreground">
+              {activeSellers.map((u) => u.name).join(" · ") || "Ningún vendedor activo"}
+            </p>
+          </div>
+        )}
+
+        {leadDistribution.mode === "rules" && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <p className="text-sm font-medium">Reglas (se evalúan en orden)</p>
+              <Button size="sm" variant="outline" onClick={addRule}>
+                <Plus className="size-4" /> Agregar regla
+              </Button>
+            </div>
+            {leadDistribution.rules.length === 0 && (
+              <p className="text-sm text-muted-foreground">Sin reglas. Todos los leads caen al fallback.</p>
+            )}
+            {leadDistribution.rules.map((r) => (
+              <div key={r.id} className="grid gap-2 rounded-lg border p-3 sm:grid-cols-[140px_1fr_1fr_auto]">
+                <Select value={r.field} onChange={(e) => updateRule(r.id, { field: e.target.value as typeof r.field })}>
+                  <option value="source">Origen</option>
+                  <option value="product_interest">Producto</option>
+                  <option value="utm_campaign">Campaña (UTM)</option>
+                </Select>
+                <Input
+                  placeholder="contiene…"
+                  value={r.match}
+                  onChange={(e) => updateRule(r.id, { match: e.target.value })}
+                />
+                <Select value={r.user_id} onChange={(e) => updateRule(r.id, { user_id: e.target.value })}>
+                  {activeSellers.map((u) => (
+                    <option key={u.id} value={u.id}>{u.name}</option>
+                  ))}
+                </Select>
+                <Button size="sm" variant="ghost" onClick={() => deleteRule(r.id)}>
+                  <Trash2 className="size-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        )}
+
+        <Field label="Fallback (si ninguna regla aplica o no hay vendedores activos)">
+          <Select value={leadDistribution.fallback_user_id ?? ""} onChange={(e) => setFallback(e.target.value)}>
+            <option value="">— Sin asignar —</option>
+            {activeSellers.map((u) => (
+              <option key={u.id} value={u.id}>{u.name}</option>
+            ))}
+          </Select>
+        </Field>
+
+        <p className="text-xs text-muted-foreground">
+          Supervisor y Admin pueden reasignar leads en cualquier momento desde la ficha del lead.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
+function ModeCard({ active, title, desc, onClick }: { active: boolean; title: string; desc: string; onClick: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={
+        "rounded-lg border p-3 text-left transition-colors " +
+        (active ? "border-primary bg-primary/5 ring-1 ring-primary/40" : "hover:bg-accent")
+      }
+    >
+      <p className="text-sm font-semibold">{title}</p>
+      <p className="mt-1 text-xs text-muted-foreground">{desc}</p>
+    </button>
+  );
+}
+
