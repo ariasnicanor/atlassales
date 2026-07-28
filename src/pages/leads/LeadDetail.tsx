@@ -11,6 +11,7 @@ import {
   Send,
   Sparkles,
   CalendarClock,
+  CalendarPlus,
   Trash2,
 } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
