@@ -28,6 +28,7 @@ const roleVariant: Record<UserRole, "default" | "secondary" | "muted"> = {
   admin: "default",
   supervisor: "secondary",
   vendedor: "muted",
+  recepcion: "muted",
 };
 
 export default function Users() {
