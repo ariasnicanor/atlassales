@@ -395,6 +395,57 @@ export default function LeadDetail() {
         {/* Columna derecha: interacciones */}
         <div className="space-y-6 lg:col-span-2">
           <Card>
+            <CardHeader><CardTitle>Nueva tarea</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              <div className="grid gap-3 sm:grid-cols-2">
+                <Field label="Título">
+                  <input
+                    className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    placeholder={`Llamar a ${lead.name}`}
+                    value={taskTitle}
+                    onChange={(e) => setTaskTitle(e.target.value)}
+                  />
+                </Field>
+                <Field label="Prioridad">
+                  <Select value={taskPriority} onChange={(e) => setTaskPriority(e.target.value as TaskPriority)}>
+                    <option value="baja">Baja</option>
+                    <option value="media">Media</option>
+                    <option value="alta">Alta</option>
+                  </Select>
+                </Field>
+                <Field label="Fecha">
+                  <input
+                    type="date"
+                    className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    value={taskDate}
+                    onChange={(e) => setTaskDate(e.target.value)}
+                  />
+                </Field>
+                <Field label="Hora">
+                  <input
+                    type="time"
+                    className="flex h-10 w-full rounded-lg border border-input bg-background px-3 py-2 text-sm"
+                    value={taskTime}
+                    onChange={(e) => setTaskTime(e.target.value)}
+                  />
+                </Field>
+              </div>
+              <Textarea
+                rows={2}
+                placeholder="Detalle de la tarea (opcional)"
+                value={taskDesc}
+                onChange={(e) => setTaskDesc(e.target.value)}
+              />
+              <div className="flex justify-end">
+                <Button onClick={submitTask}><CalendarPlus className="size-4" /> Crear tarea</Button>
+              </div>
+              <p className="text-xs text-muted-foreground">
+                La tarea se suma al historial de interacciones y aparece en el calendario con el nombre del lead.
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card>
             <CardHeader><CardTitle>Registrar interacción</CardTitle></CardHeader>
             <CardContent className="space-y-3">
               <div className="grid gap-3 sm:grid-cols-[180px_1fr]">
