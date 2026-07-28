@@ -175,7 +175,7 @@ export function can(
 }
 
 export function roleLabel(role: UserRole) {
-  return { admin: "Admin", supervisor: "Supervisor", vendedor: "Vendedor" }[role];
+  return { admin: "Admin", supervisor: "Supervisor", vendedor: "Vendedor", recepcion: "Recepción" }[role];
 }
 
 /** Ámbito de datos que ve el usuario ("own" | "team" | "all"). */
