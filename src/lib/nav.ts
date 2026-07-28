@@ -14,6 +14,7 @@ import {
   Target,
   Trophy,
   MessageSquareText,
+  MessageCircle,
   Zap,
   Sparkles,
   Bot,
