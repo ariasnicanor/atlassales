@@ -32,7 +32,7 @@ export default function Leads() {
   const { leads, seeAll } = useScopedData();
   const { users } = useData();
   const { currentUser } = useSession();
-  const canImport = currentUser?.role === "admin" || currentUser?.role === "supervisor";
+  const canImport = hasFeature(currentUser, "import_leads");
 
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
