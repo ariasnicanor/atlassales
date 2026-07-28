@@ -61,6 +61,11 @@ export default function LeadDetail() {
   const [intType, setIntType] = useState<InteractionType>("llamada");
   const [intNote, setIntNote] = useState("");
   const [requestNote, setRequestNote] = useState("");
+  const [taskTitle, setTaskTitle] = useState("");
+  const [taskDesc, setTaskDesc] = useState("");
+  const [taskDate, setTaskDate] = useState(() => new Date().toISOString().slice(0, 10));
+  const [taskTime, setTaskTime] = useState("09:00");
+  const [taskPriority, setTaskPriority] = useState<TaskPriority>("media");
 
   const canViewRemarketing = can(currentUser, "view", "remarketing");
   const canRequestRemarketing = can(currentUser, "request", "remarketing");
