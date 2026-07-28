@@ -19,6 +19,7 @@ import {
   Sparkles,
   Bot,
   Plus,
+  Upload,
   type LucideIcon,
 } from "lucide-react";
 import type { PlanTier, User, UserRole } from "@/types";
