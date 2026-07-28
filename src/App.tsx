@@ -44,6 +44,7 @@ function AppRoutes() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
         <Route path="/leads" element={<Leads />} />
+        <Route path="/leads/import" element={<LeadsImport />} />
         <Route path="/leads/new" element={<LeadForm />} />
         <Route path="/leads/:id" element={<LeadDetail />} />
         <Route path="/leads/:id/edit" element={<LeadForm />} />
