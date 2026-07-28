@@ -338,17 +338,21 @@ export function DataProvider({ children }: { children: ReactNode }) {
           (s) => ({ ...s, tasks: [task, ...s.tasks] }),
           { action: "create", resource: "task", resource_id: task.id, meta: task.title }
         );
+        syncTaskToGCal(task);
         return task;
       },
 
-      updateTask: (id, patch) =>
+      updateTask: (id, patch) => {
         withAudit(
           (s) => ({
             ...s,
             tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
           }),
           { action: "update", resource: "task", resource_id: id }
-        ),
+        );
+        const updated = stateRef.current.tasks.find((t) => t.id === id);
+        if (updated) syncTaskToGCal(updated);
+      },
 
       toggleTaskComplete: (id) =>
         withAudit(
@@ -363,11 +367,13 @@ export function DataProvider({ children }: { children: ReactNode }) {
           { action: "toggle", resource: "task", resource_id: id }
         ),
 
-      deleteTask: (id) =>
+      deleteTask: (id) => {
         withAudit(
           (s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== id) }),
           { action: "delete", resource: "task", resource_id: id }
-        ),
+        );
+        removeTaskFromGCal(id);
+      },
 
       updateUser: (id, patch) =>
         withAudit(
