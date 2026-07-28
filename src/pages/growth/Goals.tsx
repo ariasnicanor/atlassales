@@ -18,6 +18,16 @@ function isThisMonth(iso: string) {
   return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
 }
 
+function progressTone(progress: number) {
+  if (progress >= 100)
+    return { text: "text-success", bar: "bg-success", border: "border-success/40", badge: "success" as const, label: "Objetivo cumplido" };
+  if (progress >= 75)
+    return { text: "text-primary", bar: "bg-primary", border: "", badge: "secondary" as const, label: "Casi ahí" };
+  if (progress >= 40)
+    return { text: "text-warning", bar: "bg-warning", border: "", badge: "muted" as const, label: "En camino" };
+  return { text: "text-destructive", bar: "bg-destructive", border: "", badge: "muted" as const, label: "Vas atrasado" };
+}
+
 function GoalsInner() {
   const { goals, sales, users } = useData();
   const { currentUser } = useSession();
