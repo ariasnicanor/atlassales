@@ -83,6 +83,15 @@ export const ROLE_MATRIX: Record<UserRole, Partial<Record<Resource, Action[]>>> 
     users: ["view"],
     settings: ["view"],
   },
+  recepcion: {
+    dashboard: ["view"],
+    leads: ["view", "create", "assign", "reassign"],
+    clients: ["view", "create"],
+    tasks: ["view", "create"],
+    products: ["view"],
+    stock: ["view"],
+    settings: ["view"],
+  },
   admin: {
     dashboard: ALL,
     leads: ALL,
