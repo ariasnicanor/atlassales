@@ -62,6 +62,8 @@ export default function Stock() {
     defaultValues: { status: "disponible", condition: "nuevo", availability: 1, list_price: 0 },
   });
   const watchCondition = watch("condition");
+  const { currentUser } = useSession();
+  const canCreate = can(currentUser, "create", "stock");
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -160,7 +162,7 @@ export default function Stock() {
               </form>
             </DialogContent>
           </Dialog>
-        }
+        ) : null}
       />
 
       {/* Búsqueda + filtros en popup (igual que Leads) */}
