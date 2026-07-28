@@ -1,6 +1,6 @@
 import { NavLink, Link } from "react-router-dom";
 import { Lock, Waves, Sparkles } from "lucide-react";
-import { PRIMARY_NAV, MORE_GROUPS, itemAllowed, type NavItem } from "@/lib/nav";
+import { PRIMARY_NAV, MORE_GROUPS, itemAllowedForUser, type NavItem } from "@/lib/nav";
 import { useData } from "@/data/store";
 import { usePlan } from "@/hooks/usePlan";
 import { useSession } from "@/context/session";
