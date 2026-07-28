@@ -202,7 +202,7 @@ export default function CalendarPage() {
       }
     }
     return list.sort((a, b) => a.date.getTime() - b.date.getTime());
-  }, [tasks, interactions, leadById, userById, visibleUserIds]);
+  }, [tasks, interactions, scopedLeads, leadById, userById, visibleUserIds]);
 
   const rangeLabel = useMemo(() => {
     if (view === "day") return format(cursor, "EEEE d 'de' MMMM yyyy", { locale: es });
