@@ -70,6 +70,7 @@ export const MORE_GROUPS: NavGroup[] = [
   {
     title: "Gestión",
     items: [
+      { label: "Calendario", path: "/calendar", icon: CalendarDays, moduleKey: "calendar", tier: "core" },
       { label: "Reportes", path: "/reports", icon: BarChart3, moduleKey: "reports", tier: "core", roles: ["admin", "supervisor"], feature: "view_reports" },
       { label: "Usuarios", path: "/users", icon: UsersRound, moduleKey: "users", tier: "core", roles: ["admin", "supervisor"] },
       { label: "Clientes", path: "/clients", icon: Contact, moduleKey: "clients", tier: "core", roles: ["admin"] },
