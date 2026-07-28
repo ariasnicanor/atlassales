@@ -1,6 +1,6 @@
 import { NavLink, Link } from "react-router-dom";
 import { Lock, Waves, Sparkles } from "lucide-react";
-import { PRIMARY_NAV, MORE_GROUPS, itemAllowedForUser, type NavItem } from "@/lib/nav";
+import { getProfileSections } from "@/lib/nav";
 import { useData } from "@/data/store";
 import { usePlan } from "@/hooks/usePlan";
 import { useSession } from "@/context/session";
@@ -11,13 +11,7 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
   const { hasModule } = usePlan();
   const { currentUser } = useSession();
 
-  const sections: { title: string; items: NavItem[] }[] = [
-    { title: "Core", items: PRIMARY_NAV },
-    ...MORE_GROUPS.map((g) => ({
-      title: g.title,
-      items: g.items.filter((i) => itemAllowedForUser(i, currentUser)),
-    })),
-  ].filter((s) => s.items.length > 0);
+  const sections = getProfileSections(currentUser);
 
   return (
     <div className="flex h-full flex-col bg-card">

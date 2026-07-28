@@ -19,6 +19,7 @@ import {
   Sparkles,
   Bot,
   Plus,
+  Upload,
   type LucideIcon,
 } from "lucide-react";
 import type { PlanTier, User, UserRole } from "@/types";
@@ -116,3 +117,105 @@ export function itemAllowedForUser(item: NavItem, user: User | null | undefined)
 }
 
 export { Plus };
+
+// ============================================================
+//  Navegación agrupada por PERFIL (rol del usuario)
+// ============================================================
+
+const ROLE_LABEL: Record<UserRole, string> = {
+  vendedor: "Vendedor",
+  recepcion: "Recepción",
+  supervisor: "Supervisor",
+  admin: "Admin",
+};
+
+/** Ítem extra: Importar leads (gated por feature). */
+const IMPORT_LEADS: NavItem = {
+  label: "Importar leads",
+  path: "/leads/import",
+  icon: Upload,
+  moduleKey: "leads",
+  tier: "core",
+  roles: ["admin", "supervisor"],
+  feature: "import_leads",
+};
+
+/** Orden preferido de herramientas por perfil (paths). */
+const PROFILE_ORDER: Record<UserRole, string[]> = {
+  vendedor: [
+    "/dashboard",
+    "/leads",
+    "/whatsapp",
+    "/tasks",
+    "/stock",
+    "/growth/quoter",
+    "/growth/simulator",
+    "/growth/templates",
+    "/growth/goals",
+    "/growth/ranking",
+    "/settings",
+  ],
+  recepcion: [
+    "/leads",
+    "/whatsapp",
+  ],
+  supervisor: [
+    "/dashboard",
+    "/leads",
+    "/leads/import",
+    "/whatsapp",
+    "/tasks",
+    "/stock",
+    "/users",
+    "/reports",
+    "/growth/quoter",
+    "/growth/simulator",
+    "/growth/goals",
+    "/growth/ranking",
+    "/growth/commissions",
+    "/growth/templates",
+    "/settings",
+  ],
+  admin: [
+    "/dashboard",
+    "/leads",
+    "/leads/import",
+    "/whatsapp",
+    "/tasks",
+    "/stock",
+    "/clients",
+    "/users",
+    "/reports",
+    "/audit",
+    "/growth/quoter",
+    "/growth/simulator",
+    "/growth/goals",
+    "/growth/ranking",
+    "/growth/commissions",
+    "/growth/templates",
+    "/automation",
+    "/ai-assist",
+    "/ai-agent",
+    "/settings",
+  ],
+};
+
+/** Devuelve las herramientas visibles agrupadas bajo el perfil del usuario. */
+export function getProfileSections(user: User | null | undefined): NavGroup[] {
+  if (!user) return [];
+  const allItems: NavItem[] = [
+    ...PRIMARY_NAV,
+    IMPORT_LEADS,
+    ...MORE_GROUPS.flatMap((g) => g.items),
+  ];
+  const byPath = new Map(allItems.map((i) => [i.path, i]));
+  const order = PROFILE_ORDER[user.role] ?? [];
+  const items: NavItem[] = [];
+  for (const path of order) {
+    const it = byPath.get(path);
+    if (it && itemAllowedForUser(it, user)) items.push(it);
+  }
+  if (items.length === 0) return [];
+  return [{ title: `Perfil ${ROLE_LABEL[user.role]}`, items }];
+}
+
