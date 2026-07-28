@@ -96,6 +96,8 @@ export default function Settings() {
       />
 
       {currentUser && <IntegrationsSection userId={currentUser.id} userEmail={currentUser.email ?? ""} />}
+      {isAdmin && <PixelSection />}
+
 
       {/* Mi perfil */}
       <Card>
