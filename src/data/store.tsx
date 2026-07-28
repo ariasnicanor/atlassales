@@ -596,6 +596,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
         const fresh = buildSeedState();
         setState(fresh);
       },
+
+      updateDistributionConfig: (patch) =>
+        withAudit(
+          (s) => ({ ...s, leadDistribution: { ...s.leadDistribution, ...patch } }),
+          { action: "update", resource: "lead_distribution", meta: patch.mode ?? null }
+        ),
     };
   }, [state, pushAudit]);
 
