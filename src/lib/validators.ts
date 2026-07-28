@@ -12,7 +12,9 @@ export const leadSchema = z.object({
     "proximo_a_vender",
     "vendido",
     "sin_gestion",
+    "remarketing",
     "cerrado",
+
     // Legacy
     "en_seguimiento",
     "cotizado",
