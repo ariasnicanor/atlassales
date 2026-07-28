@@ -212,3 +212,108 @@ export default function Settings() {
     </div>
   );
 }
+
+function IntegrationsSection({ userId, userEmail }: { userId: string; userEmail: string }) {
+  const { toast } = useToast();
+  const [conn, setConn] = useState<GCalConnection>(() => getConnection(userId));
+  const [loading, setLoading] = useState(false);
+  const isReal = hasRealCredentials();
+
+  useEffect(() => {
+    const refresh = () => setConn(getConnection(userId));
+    window.addEventListener("gcal:changed", refresh);
+    return () => window.removeEventListener("gcal:changed", refresh);
+  }, [userId]);
+
+  const handleConnect = async () => {
+    setLoading(true);
+    try {
+      const next = await connectGoogleCalendar(userId, userEmail);
+      setConn(next);
+      toast(isReal ? "Google Calendar conectado ✅" : "Conexión simulada activa ✅");
+    } catch {
+      toast("No se pudo conectar con Google");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleDisconnect = () => {
+    disconnectGoogleCalendar(userId);
+    setConn(getConnection(userId));
+    toast("Google Calendar desconectado");
+  };
+
+  const handleSync = () => {
+    const events = pullEventsFromGoogle(userId);
+    setConn(getConnection(userId));
+    toast(`Sincronización completada — ${events.length} evento(s)`);
+  };
+
+  const connected = conn.status === "connected";
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Calendar className="size-5 text-primary" /> Integraciones
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <div className="flex flex-col gap-4 rounded-xl border p-4 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex items-start gap-3">
+            <div className="flex size-10 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-primary">
+              <Calendar className="size-5" />
+            </div>
+            <div className="min-w-0">
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="font-medium">Google Calendar</p>
+                <Badge variant={connected ? "default" : "secondary"}>
+                  {connected ? "Conectado" : "Desconectado"}
+                </Badge>
+                {!isReal && (
+                  <Badge variant="outline" className="text-xs">Modo simulado</Badge>
+                )}
+              </div>
+              <p className="mt-1 text-sm text-muted-foreground">
+                Sincroniza eventos, tareas y seguimientos de leads en ambos sentidos con tu calendario.
+              </p>
+              {connected && (
+                <p className="mt-1 text-xs text-muted-foreground">
+                  Cuenta: <strong>{conn.email}</strong>
+                  {conn.last_sync_at && (
+                    <> · Última sync: {new Date(conn.last_sync_at).toLocaleString()}</>
+                  )}
+                </p>
+              )}
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {connected ? (
+              <>
+                <Button variant="outline" onClick={handleSync}>
+                  <RefreshCw className="size-4" /> Sincronizar ahora
+                </Button>
+                <Button variant="outline" onClick={handleDisconnect}>
+                  <Unlink className="size-4" /> Desconectar
+                </Button>
+              </>
+            ) : (
+              <Button onClick={handleConnect} disabled={loading}>
+                <Link2 className="size-4" /> {loading ? "Conectando..." : "Conectar Google"}
+              </Button>
+            )}
+          </div>
+        </div>
+
+        {!isReal && (
+          <p className="text-xs text-muted-foreground">
+            Aún no hay credenciales de Google configuradas. La conexión está simulada y la estructura de
+            sincronización ya está lista: al agregar <code>VITE_GOOGLE_CLIENT_ID</code> se activa el OAuth real
+            sin cambios en la interfaz.
+          </p>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
