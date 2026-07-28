@@ -225,6 +225,81 @@ export function DataProvider({ children }: { children: ReactNode }) {
 
       logAudit: (entry) => setState((s) => pushAudit(s, entry)),
 
+      requestRemarketingLead: (leadId, note) => {
+        const actor = actorRef.current;
+        if (!actor) return;
+        const now = nowIso();
+        withAudit(
+          (s) => {
+            const lead = s.leads.find((l) => l.id === leadId);
+            if (!lead) return s;
+            const already = s.remarketingRequests.some(
+              (r) => r.lead_id === leadId && r.requested_by === actor.id && r.status === "pendiente"
+            );
+            if (already) return s;
+            const req: RemarketingRequest = {
+              id: uid("rmreq"),
+              company_id: s.company.id,
+              lead_id: leadId,
+              lead_name: lead.name,
+              requested_by: actor.id,
+              requested_by_name: actor.name,
+              note: note ?? null,
+              status: "pendiente",
+              created_at: now,
+            };
+            return { ...s, remarketingRequests: [req, ...s.remarketingRequests] };
+          },
+          { action: "remarketing_request", resource: "lead", resource_id: leadId, meta: note ?? null }
+        );
+      },
+
+      resolveRemarketingRequest: (id, status, note) => {
+        const actor = actorRef.current;
+        const now = nowIso();
+        withAudit(
+          (s) => {
+            const req = s.remarketingRequests.find((r) => r.id === id);
+            if (!req || req.status !== "pendiente") return s;
+            const requests = s.remarketingRequests.map((r) =>
+              r.id === id
+                ? {
+                    ...r,
+                    status,
+                    resolved_by: actor?.id ?? null,
+                    resolved_by_name: actor?.name ?? "Sistema",
+                    resolution_note: note ?? null,
+                    resolved_at: now,
+                  }
+                : r
+            );
+            const leads =
+              status === "aprobada"
+                ? s.leads.map((l) =>
+                    l.id === req.lead_id
+                      ? {
+                          ...l,
+                          status: "contactado" as const,
+                          assigned_user_id: req.requested_by,
+                          remarketing_since: null,
+                          remarketing_reason: null,
+                          last_management_at: now,
+                          updated_at: now,
+                        }
+                      : l
+                  )
+                : s.leads;
+            return { ...s, leads, remarketingRequests: requests };
+          },
+          {
+            action: status === "aprobada" ? "remarketing_request_approved" : "remarketing_request_rejected",
+            resource: "lead",
+            resource_id: id,
+            meta: note ?? null,
+          }
+        );
+      },
+
       updateCompany: (patch) =>
         withAudit(
           (s) => ({ ...s, company: { ...s.company, ...patch } }),
