@@ -37,7 +37,7 @@ export default function ProductDetail() {
     );
   }
 
-  const interested = leads.filter((l) => l.product_interest === product.name && !["ganado", "perdido"].includes(l.status));
+  const interested = leads.filter((l) => l.product_interest === product.name && !["vendido", "cerrado"].includes(l.status));
 
   // Grilla de datos: para vehículos muestra Año/Km/Combustible/Transmisión.
   const details: { icon: LucideIcon; label: string; value: string }[] = [];

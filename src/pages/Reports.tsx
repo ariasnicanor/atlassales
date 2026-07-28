@@ -41,7 +41,7 @@ export default function Reports() {
       sellers.map((u) => ({
         name: u.name.split(" ")[0],
         leads: leads.filter((l) => l.assigned_user_id === u.id).length,
-        ganados: leads.filter((l) => l.assigned_user_id === u.id && l.status === "ganado").length,
+        ganados: leads.filter((l) => l.assigned_user_id === u.id && l.status === "vendido").length,
       })),
     [leads, sellers]
   );
@@ -55,11 +55,11 @@ export default function Reports() {
     [tasks, sellers]
   );
 
-  const won = leads.filter((l) => l.status === "ganado").length;
-  const lost = leads.filter((l) => l.status === "perdido").length;
+  const won = leads.filter((l) => l.status === "vendido").length;
+  const lost = leads.filter((l) => l.status === "cerrado").length;
   const wonLost = [
-    { name: "Ganados", value: won },
-    { name: "Perdidos", value: lost },
+    { name: "Vendidos", value: won },
+    { name: "Cerrados", value: lost },
   ];
   const conversion = won + lost > 0 ? won / (won + lost) : 0;
   const totalSold = sales.reduce((acc, s) => acc + s.amount, 0);

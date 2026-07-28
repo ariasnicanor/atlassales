@@ -17,8 +17,8 @@ function RankingInner() {
     return sellers
       .map((s) => {
         const sellerLeads = leads.filter((l) => l.assigned_user_id === s.id);
-        const won = sellerLeads.filter((l) => l.status === "ganado").length;
-        const lost = sellerLeads.filter((l) => l.status === "perdido").length;
+        const won = sellerLeads.filter((l) => l.status === "vendido").length;
+        const lost = sellerLeads.filter((l) => l.status === "cerrado").length;
         const sellerSales = sales.filter((x) => x.user_id === s.id);
         const sold = sellerSales.reduce((a, x) => a + x.amount, 0);
         const conversion = won + lost > 0 ? won / (won + lost) : 0;

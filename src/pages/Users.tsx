@@ -41,8 +41,8 @@ export default function Users() {
   const metricsFor = useMemo(
     () => (u: User) => {
       const uLeads = leads.filter((l) => l.assigned_user_id === u.id);
-      const won = uLeads.filter((l) => l.status === "ganado").length;
-      const lost = uLeads.filter((l) => l.status === "perdido").length;
+      const won = uLeads.filter((l) => l.status === "vendido").length;
+      const lost = uLeads.filter((l) => l.status === "cerrado").length;
       const uSales = sales.filter((s) => s.user_id === u.id);
       return {
         leads: uLeads.length,
