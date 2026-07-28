@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Waves, Palette, Save, RotateCcw, UserRound, Lock, Calendar, RefreshCw, Link2, Unlink } from "lucide-react";
+import { Waves, Palette, Save, RotateCcw, UserRound, Lock, Calendar, RefreshCw, Link2, Unlink, Target } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -20,6 +20,13 @@ import {
   pullEventsFromGoogle,
   type GCalConnection,
 } from "@/lib/google-calendar";
+import {
+  getTrackingConfig,
+  saveTrackingConfig,
+  hasMetaPixel,
+  hasGoogleAds,
+  type TrackingConfig,
+} from "@/lib/tracking";
 
 const INDUSTRIES = [
   "Concesionaria",
@@ -89,6 +96,8 @@ export default function Settings() {
       />
 
       {currentUser && <IntegrationsSection userId={currentUser.id} userEmail={currentUser.email ?? ""} />}
+      {isAdmin && <PixelSection />}
+
 
       {/* Mi perfil */}
       <Card>
@@ -313,6 +322,89 @@ function IntegrationsSection({ userId, userEmail }: { userId: string; userEmail:
             sin cambios en la interfaz.
           </p>
         )}
+      </CardContent>
+    </Card>
+  );
+}
+
+function PixelSection() {
+  const { toast } = useToast();
+  const [cfg, setCfg] = useState<TrackingConfig>(() => getTrackingConfig());
+  const set = (k: keyof TrackingConfig, v: string) => setCfg((c) => ({ ...c, [k]: v }));
+
+  const save = () => {
+    saveTrackingConfig(cfg);
+    toast("Pixeles guardados ✅");
+  };
+
+  const metaOk = hasMetaPixel(cfg);
+  const adsOk = hasGoogleAds(cfg);
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Target className="size-5 text-primary" /> Pixel y campañas
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <p className="text-sm text-muted-foreground">
+          Cargá los IDs de tus pixeles para medir conversiones desde Meta Ads y Google Ads.
+          Los eventos <code>Lead</code> / <code>conversion</code> se disparan automáticamente al crear un lead
+          que viene de una campaña (con <code>utm_source</code>, <code>gclid</code> o <code>fbclid</code>).
+        </p>
+
+        <div className="rounded-xl border p-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-medium">Meta / Facebook Pixel</p>
+            <Badge variant={metaOk ? "default" : "secondary"}>
+              {metaOk ? "Activo" : "Sin configurar"}
+            </Badge>
+          </div>
+          <Field label="ID del Pixel de Meta" hint="Ej: 1234567890123456 (solo números)">
+            <Input
+              value={cfg.meta_pixel_id}
+              onChange={(e) => set("meta_pixel_id", e.target.value.trim())}
+              placeholder="1234567890123456"
+              inputMode="numeric"
+            />
+          </Field>
+        </div>
+
+        <div className="rounded-xl border p-4 space-y-3">
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="font-medium">Google Ads</p>
+            <Badge variant={adsOk ? "default" : "secondary"}>
+              {adsOk ? "Activo" : "Sin configurar"}
+            </Badge>
+          </div>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="ID de conversión" hint="Ej: AW-123456789">
+              <Input
+                value={cfg.google_ads_id}
+                onChange={(e) => set("google_ads_id", e.target.value.trim())}
+                placeholder="AW-123456789"
+              />
+            </Field>
+            <Field label="Etiqueta de conversión (Lead)" hint="Opcional — send_to = AW-XXX/LABEL">
+              <Input
+                value={cfg.google_ads_lead_label}
+                onChange={(e) => set("google_ads_lead_label", e.target.value.trim())}
+                placeholder="abcDEFghi123"
+              />
+            </Field>
+          </div>
+        </div>
+
+        <div className="flex justify-end">
+          <Button onClick={save}><Save className="size-4" /> Guardar pixeles</Button>
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          También podés definirlos con variables de entorno: <code>VITE_META_PIXEL_ID</code>,{" "}
+          <code>VITE_GOOGLE_ADS_ID</code> y <code>VITE_GOOGLE_ADS_LEAD_LABEL</code>. Los valores guardados acá
+          tienen prioridad y se aplican al instante en toda la app.
+        </p>
       </CardContent>
     </Card>
   );

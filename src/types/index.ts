@@ -120,6 +120,15 @@ export interface Lead {
   notes?: string | null;
   /** Última gestión registrada (mensaje, llamada, nota o cambio de estado). */
   last_management_at?: ISODate | null;
+  /** Atribución de campaña (UTMs capturados al llegar el lead). */
+  utm_source?: string | null;
+  utm_medium?: string | null;
+  utm_campaign?: string | null;
+  utm_term?: string | null;
+  utm_content?: string | null;
+  gclid?: string | null;
+  fbclid?: string | null;
+  landing_url?: string | null;
   created_at: ISODate;
   updated_at: ISODate;
 }

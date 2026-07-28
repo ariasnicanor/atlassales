@@ -144,6 +144,18 @@ export default function LeadDetail() {
               <Row label="Vendedor" value={seller?.name ?? "Sin asignar"} />
               <Row label="Creado" value={fmtDate(lead.created_at)} />
               <Row label="Última gestión" value={fromNow(lead.last_management_at ?? lead.updated_at)} />
+              {(lead.utm_source || lead.utm_campaign || lead.gclid || lead.fbclid) && (
+                <div className="space-y-1 rounded-lg border bg-muted/30 p-3 text-xs">
+                  <p className="mb-1 font-medium text-foreground">Atribución de campaña</p>
+                  {lead.utm_source && <Row label="utm_source" value={lead.utm_source} />}
+                  {lead.utm_medium && <Row label="utm_medium" value={lead.utm_medium} />}
+                  {lead.utm_campaign && <Row label="utm_campaign" value={lead.utm_campaign} />}
+                  {lead.utm_content && <Row label="utm_content" value={lead.utm_content} />}
+                  {lead.utm_term && <Row label="utm_term" value={lead.utm_term} />}
+                  {lead.gclid && <Row label="gclid" value={lead.gclid} />}
+                  {lead.fbclid && <Row label="fbclid" value={lead.fbclid} />}
+                </div>
+              )}
               {(() => {
                 const days = daysWithoutManagement(lead);
                 const stale = stalenessInfo(days);
