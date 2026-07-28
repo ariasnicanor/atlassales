@@ -33,6 +33,7 @@ import AiAssist from "@/pages/premium/AiAssist";
 import AiAgent from "@/pages/premium/AiAgent";
 import Plans from "@/pages/Plans";
 import NotFound from "@/pages/NotFound";
+import WhatsAppPage from "@/pages/WhatsApp";
 
 function AppRoutes() {
   return (
