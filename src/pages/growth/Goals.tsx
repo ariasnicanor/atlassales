@@ -61,6 +61,58 @@ function GoalsInner() {
         </Card>
       )}
 
+      {!seeTeam &&
+        rows.map(({ goal, achieved, progress }) => {
+          const tone = progressTone(progress);
+          const remaining = Math.max(0, goal.target_amount - achieved);
+          return (
+            <Card key={goal.id} className={`overflow-hidden ${tone.border}`}>
+              <CardContent className="grid gap-6 p-5 sm:grid-cols-[1fr_auto] sm:items-center sm:p-6">
+                <div className="space-y-4">
+                  <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
+                    <Target className="size-4 text-primary" /> Objetivo mensual asignado
+                  </div>
+
+                  <div>
+                    <p className="text-3xl font-bold leading-tight">{formatCurrency(achieved)}</p>
+                    <p className="text-sm text-muted-foreground">
+                      de {formatCurrency(goal.target_amount)} · {goal.target_units} unidades
+                    </p>
+                  </div>
+
+                  <Progress value={progress} indicatorClassName={tone.bar} />
+
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded-lg bg-muted/60 p-2">
+                      <p className="text-[11px] text-muted-foreground">Alcanzado</p>
+                      <p className="truncate text-sm font-semibold">{formatCurrency(achieved)}</p>
+                    </div>
+                    <div className="rounded-lg bg-muted/60 p-2">
+                      <p className="text-[11px] text-muted-foreground">Objetivo</p>
+                      <p className="truncate text-sm font-semibold">{formatCurrency(goal.target_amount)}</p>
+                    </div>
+                    <div className="rounded-lg bg-muted/60 p-2">
+                      <p className="text-[11px] text-muted-foreground">Falta</p>
+                      <p className={`truncate text-sm font-semibold ${remaining === 0 ? "text-success" : ""}`}>
+                        {formatCurrency(remaining)}
+                      </p>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex flex-col items-center justify-center rounded-2xl bg-muted/40 px-6 py-8 sm:min-w-[240px]">
+                  <p className={`text-7xl font-extrabold leading-none tabular-nums sm:text-8xl ${tone.text}`}>
+                    {Math.round(progress)}
+                    <span className="text-3xl font-bold sm:text-4xl">%</span>
+                  </p>
+                  <p className="mt-3 text-sm text-muted-foreground">del objetivo del mes</p>
+                  <Badge variant={tone.badge} className="mt-3">{tone.label}</Badge>
+                </div>
+              </CardContent>
+            </Card>
+          );
+        })}
+
       {seeTeam && teamGoal && (
         <Card className="border-primary/30">
           <CardHeader><CardTitle className="flex items-center gap-2"><Target className="size-5 text-primary" /> Objetivo del equipo</CardTitle></CardHeader>
