@@ -2,6 +2,7 @@ import { useMemo, useState } from "react";
 import { useSearchParams, useNavigate, Link } from "react-router-dom";
 import { Plus, Search, LayoutGrid, Columns3, Flame, SlidersHorizontal, X, Upload } from "lucide-react";
 import { useSession } from "@/context/session";
+import { hasFeature } from "@/lib/features";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
