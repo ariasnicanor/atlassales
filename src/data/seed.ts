@@ -252,36 +252,48 @@ const leadLast = [
   "Benítez", "Figueroa", "Villalba", "Correa", "Ojeda", "Barrios", "Peralta",
 ];
 const sources = ["Web", "WhatsApp", "Referido", "Instagram", "Showroom", "Campaña Meta", "Llamada entrante", "Mercado Libre"];
-const statuses: LeadStatus[] = ["nuevo", "contactado", "en_seguimiento", "cotizado", "negociacion", "ganado", "perdido"];
+const statuses: LeadStatus[] = ["nuevo", "contactado", "en_negociacion", "proximo_a_vender", "vendido", "sin_gestion", "cerrado"];
 const temps: Temperature[] = ["frio", "tibio", "caliente"];
 
-// Distribución pensada para que el dashboard se vea activo.
+// Distribución pensada para que el dashboard se vea activo con el nuevo pipeline.
 const statusPlan: LeadStatus[] = [
   "nuevo", "nuevo", "nuevo", "nuevo", "nuevo",
   "contactado", "contactado", "contactado", "contactado",
-  "en_seguimiento", "en_seguimiento", "en_seguimiento", "en_seguimiento", "en_seguimiento",
-  "cotizado", "cotizado", "cotizado", "cotizado",
-  "negociacion", "negociacion", "negociacion",
-  "ganado", "ganado", "ganado", "ganado",
-  "perdido", "perdido",
-  "en_seguimiento", "contactado", "nuevo",
+  "en_negociacion", "en_negociacion", "en_negociacion", "en_negociacion", "en_negociacion",
+  "proximo_a_vender", "proximo_a_vender", "proximo_a_vender", "proximo_a_vender",
+  "vendido", "vendido", "vendido", "vendido",
+  "sin_gestion", "sin_gestion", "sin_gestion",
+  "cerrado", "cerrado",
+  "en_negociacion", "contactado", "nuevo",
+];
+
+// Días sin gestión pensados para mostrar los 3 niveles de indicador (verde/amarillo/rojo).
+const managementAgePlan: number[] = [
+  0, 1, 2, 3, 4,
+  1, 3, 6, 8,
+  2, 5, 9, 12, 15,
+  1, 3, 10, 18,
+  0, 4, 7, 12,
+  22, 25, 28, // sin gestión → cerca del auto-cierre
+  35, 45,     // ya cerrados
+  6, 11, 2,
 ];
 
 export const demoLeads: Lead[] = statusPlan.map((status, i) => {
   const name = `${leadFirst[i % leadFirst.length]} ${pick(leadLast)}`;
   const temperature: Temperature =
-    status === "negociacion" || status === "cotizado"
+    status === "en_negociacion" || status === "proximo_a_vender"
       ? pick(["tibio", "caliente"] as Temperature[])
       : status === "nuevo"
       ? pick(temps)
       : pick(["frio", "tibio"] as Temperature[]);
   const seller = sellerIds[i % sellerIds.length];
   const product = pick(demoProducts);
-  // Some next_contact dates are overdue (to drive "seguimiento" alerts).
-  const open = !["ganado", "perdido"].includes(status);
+  const open = !["vendido", "cerrado"].includes(status);
   const nextContact = open
     ? offset(pick([-4, -2, -1, 0, 1, 2, 3, 5]))
     : null;
+  const daysAgo = managementAgePlan[i] ?? 3;
   return {
     id: `lead_${i + 1}`,
     company_id: COMPANY_ID,
@@ -296,8 +308,9 @@ export const demoLeads: Lead[] = statusPlan.map((status, i) => {
     product_interest: product.name,
     next_contact_at: nextContact,
     notes: i % 5 === 0 ? "Consultó por financiación a 12 meses." : null,
-    created_at: offset(-(2 + i)),
-    updated_at: offset(-Math.floor(i / 3)),
+    last_management_at: offset(-daysAgo),
+    created_at: offset(-(daysAgo + 2)),
+    updated_at: offset(-daysAgo),
   };
 });
 
@@ -427,7 +440,7 @@ export const demoSimulations: FinancialSimulation[] = Array.from({ length: 8 }).
 });
 
 // ── Ventas (6) ────────────────────────────────────────────────
-const wonLeads = demoLeads.filter((l) => l.status === "ganado");
+const wonLeads = demoLeads.filter((l) => l.status === "vendido");
 export const demoSales: Sale[] = Array.from({ length: 6 }).map((_, i) => {
   const lead = wonLeads[i % wonLeads.length] ?? demoLeads[i];
   const product = demoProducts[(i * 4) % demoProducts.length];
@@ -531,7 +544,7 @@ export const demoAutomationRules: AutomationRule[] = [
 
 // ── Scores IA (mock) ──────────────────────────────────────────
 export const demoAiScores: AiLeadScore[] = demoLeads
-  .filter((l) => ["caliente", "tibio"].includes(l.temperature) && !["ganado", "perdido"].includes(l.status))
+  .filter((l) => ["caliente", "tibio"].includes(l.temperature) && !["vendido", "cerrado"].includes(l.status))
   .slice(0, 8)
   .map((l, i) => ({
     id: `score_${l.id}`,
