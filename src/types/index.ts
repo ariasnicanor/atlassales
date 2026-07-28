@@ -288,6 +288,28 @@ export interface AiLeadScore {
   created_at: ISODate;
 }
 
+export type LeadDistributionMode = "round_robin" | "manual" | "rules";
+
+export interface LeadDistributionRule {
+  id: UUID;
+  /** Campo del lead a evaluar. */
+  field: "source" | "product_interest" | "utm_campaign";
+  /** Match case-insensitive por "contiene". */
+  match: string;
+  /** Vendedor destino. */
+  user_id: UUID;
+}
+
+export interface LeadDistributionConfig {
+  mode: LeadDistributionMode;
+  /** Cola de round-robin (últimos asignados). Se rota internamente. */
+  rr_pointer: number;
+  /** Reglas ordenadas: primera que matchea gana. */
+  rules: LeadDistributionRule[];
+  /** Fallback si ninguna regla matchea o no hay vendedores activos. */
+  fallback_user_id: UUID | null;
+}
+
 export interface DataState {
   company: Company;
   users: User[];
@@ -304,4 +326,6 @@ export interface DataState {
   automationRules: AutomationRule[];
   aiScores: AiLeadScore[];
   auditLog: AuditLogEntry[];
+  leadDistribution: LeadDistributionConfig;
 }
+
