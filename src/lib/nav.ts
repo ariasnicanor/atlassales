@@ -2,6 +2,7 @@ import {
   LayoutDashboard,
   Flame,
   Package,
+  CalendarDays,
   CheckSquare,
   Contact,
   UsersRound,
