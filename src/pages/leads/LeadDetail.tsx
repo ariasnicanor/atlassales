@@ -50,6 +50,7 @@ export default function LeadDetail() {
     products,
     updateLead,
     addInteraction,
+    createTask,
     deleteLead,
     remarketingRequests,
     requestRemarketingLead,
