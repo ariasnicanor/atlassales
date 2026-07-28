@@ -68,9 +68,8 @@ export const MORE_GROUPS: NavGroup[] = [
       { label: "Reportes", path: "/reports", icon: BarChart3, moduleKey: "reports", tier: "core", roles: ["admin", "supervisor"] },
       { label: "Usuarios", path: "/users", icon: UsersRound, moduleKey: "users", tier: "core", roles: ["admin", "supervisor"] },
       { label: "Clientes", path: "/clients", icon: Contact, moduleKey: "clients", tier: "core", roles: ["admin"] },
-      { label: "Clientes", path: "/clients", icon: Contact, moduleKey: "clients", tier: "core", roles: ["admin"] },
       { label: "Auditoría", path: "/audit", icon: ShieldCheck, moduleKey: "audit", tier: "core", roles: ["admin"] },
-      { label: "Configuración", path: "/settings", icon: Settings, moduleKey: "settings", tier: "core" },
+      { label: "Configuración", path: "/settings", icon: Settings, moduleKey: "settings", tier: "core", roles: ["admin", "supervisor", "vendedor"] },
     ],
   },
   {
