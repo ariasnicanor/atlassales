@@ -6,7 +6,7 @@
 export type UUID = string;
 export type ISODate = string;
 
-export type UserRole = "admin" | "supervisor" | "vendedor";
+export type UserRole = "admin" | "supervisor" | "vendedor" | "recepcion";
 
 export type LeadStatus =
   | "nuevo"
