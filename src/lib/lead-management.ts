@@ -4,6 +4,9 @@ import { daysSince } from "./date";
 /** Estados considerados "finales" — no reciben auto-cierre. */
 export const CLOSED_STATUSES: LeadStatus[] = ["vendido", "cerrado", "ganado", "perdido"];
 
+/** Estados que no participan del barrido automático (ya derivados o cerrados). */
+export const NO_AUTO_SWEEP: LeadStatus[] = [...CLOSED_STATUSES, "remarketing"];
+
 /** Estados abiertos del nuevo pipeline (excluye legacy). */
 export const OPEN_PIPELINE: LeadStatus[] = [
   "nuevo",
@@ -12,8 +15,9 @@ export const OPEN_PIPELINE: LeadStatus[] = [
   "proximo_a_vender",
 ];
 
-/** Días sin gestión configurados para auto-cierre. */
+/** Días sin gestión configurados para derivar a Remarketing. */
 export const AUTO_CLOSE_DAYS = 30;
+
 
 /** Devuelve la fecha base para calcular gestión (último toque o creación). */
 export function lastManagementDate(lead: Lead): string {
