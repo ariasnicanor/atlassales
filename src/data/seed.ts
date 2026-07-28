@@ -134,6 +134,16 @@ export const demoUsers: User[] = ([
     active: false,
     created_at: offset(-120),
   },
+  {
+    id: "user_rec",
+    company_id: COMPANY_ID,
+    name: "Valentina Ríos",
+    email: "recepcion@tuempresa.com",
+    role: "recepcion",
+    avatar_url: null,
+    active: true,
+    created_at: offset(-180),
+  },
 ] as User[]).map((u, i) => ({
   ...u,
   phone: `+54 9 266 ${String(420100 + i * 137).slice(0, 6)}`,

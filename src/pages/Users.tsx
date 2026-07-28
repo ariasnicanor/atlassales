@@ -28,6 +28,7 @@ const roleVariant: Record<UserRole, "default" | "secondary" | "muted"> = {
   admin: "default",
   supervisor: "secondary",
   vendedor: "muted",
+  recepcion: "muted",
 };
 
 export default function Users() {
@@ -178,6 +179,7 @@ function UserDetail({
             <Field label="Posición / Rol">
               <Select value={role} onChange={(e) => setRole(e.target.value as UserRole)}>
                 <option value="vendedor">Vendedor</option>
+                <option value="recepcion">Recepción</option>
                 <option value="supervisor">Supervisor</option>
                 <option value="admin">Admin</option>
               </Select>
