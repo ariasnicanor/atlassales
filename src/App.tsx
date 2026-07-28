@@ -20,6 +20,7 @@ import ClientDetail from "@/pages/clients/ClientDetail";
 import Stock from "@/pages/stock/Stock";
 import ProductDetail from "@/pages/stock/ProductDetail";
 import Tasks from "@/pages/Tasks";
+import CalendarPage from "@/pages/Calendar";
 import Users from "@/pages/Users";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
@@ -55,6 +56,7 @@ function AppRoutes() {
         <Route path="/stock" element={<Stock />} />
         <Route path="/stock/:id" element={<ProductDetail />} />
         <Route path="/tasks" element={<Tasks />} />
+        <Route path="/calendar" element={<CalendarPage />} />
         <Route path="/whatsapp" element={<WhatsAppPage />} />
         <Route path="/users" element={<Users />} />
         <Route path="/audit" element={<Audit />} />
