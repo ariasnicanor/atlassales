@@ -31,6 +31,8 @@ export default function Leads() {
   const [params, setParams] = useSearchParams();
   const { leads, seeAll } = useScopedData();
   const { users } = useData();
+  const { currentUser } = useSession();
+  const canImport = currentUser?.role === "admin" || currentUser?.role === "supervisor";
 
   const [search, setSearch] = useState("");
   const [filtersOpen, setFiltersOpen] = useState(false);
