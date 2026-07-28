@@ -4,6 +4,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { Plus, Search, Package, Gauge, Calendar, Fuel, SlidersHorizontal, X } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
+import { useSession } from "@/context/session";
+import { can } from "@/lib/permissions";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -60,6 +62,8 @@ export default function Stock() {
     defaultValues: { status: "disponible", condition: "nuevo", availability: 1, list_price: 0 },
   });
   const watchCondition = watch("condition");
+  const { currentUser } = useSession();
+  const canCreate = can(currentUser, "create", "stock");
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
@@ -96,7 +100,7 @@ export default function Stock() {
       <PageHeader
         title="Stock / Productos"
         description="Disponibilidad e info comercial con fotos, para mostrar al cliente al instante."
-        actions={
+        actions={canCreate ? (
           <Dialog open={open} onOpenChange={setOpen}>
             <DialogTrigger asChild><Button><Plus className="size-4" /> Nuevo producto</Button></DialogTrigger>
             <DialogContent>
@@ -158,7 +162,7 @@ export default function Stock() {
               </form>
             </DialogContent>
           </Dialog>
-        }
+        ) : null}
       />
 
       {/* Búsqueda + filtros en popup (igual que Leads) */}

@@ -17,6 +17,7 @@ export const LEAD_STATUS_LABEL: Record<LeadStatus, string> = {
   proximo_a_vender: "Próximo a vender",
   vendido: "Vendido",
   sin_gestion: "Sin gestión",
+  remarketing: "Remarketing",
   cerrado: "Cerrado",
   // Legacy
   en_seguimiento: "En seguimiento",
@@ -33,6 +34,7 @@ export const LEAD_STATUS_ORDER: LeadStatus[] = [
   "proximo_a_vender",
   "vendido",
   "sin_gestion",
+  "remarketing",
   "cerrado",
 ];
 
@@ -44,6 +46,7 @@ export const LEAD_STATUS_ACCENT: Record<LeadStatus, string> = {
   proximo_a_vender: "bg-amber-500",
   vendido: "bg-emerald-500",
   sin_gestion: "bg-orange-500",
+  remarketing: "bg-fuchsia-500",
   cerrado: "bg-rose-500",
   // Legacy
   en_seguimiento: "bg-violet-500",

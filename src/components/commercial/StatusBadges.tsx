@@ -24,6 +24,7 @@ const leadVariant: Record<LeadStatus, Variant> = {
   proximo_a_vender: "warning",
   vendido: "success",
   sin_gestion: "destructive",
+  remarketing: "secondary",
   cerrado: "muted",
   // Legacy
   en_seguimiento: "secondary",

@@ -17,6 +17,10 @@ export type Action =
 
 export type Resource =
   | "leads"
+  | "remarketing"
+  | "calendar"
+  | "templates"
+  | "whatsapp"
   | "clients"
   | "products"
   | "stock"
@@ -56,6 +60,10 @@ export const ROLE_MATRIX: Record<UserRole, Partial<Record<Resource, Action[]>>> 
   vendedor: {
     dashboard: ["view"],
     leads: ["view", "create", "edit"],
+    remarketing: ["view", "edit"],
+    calendar: ["view", "create", "edit"],
+    templates: ["view"],
+    whatsapp: ["view"],
     clients: ["view", "create", "edit"],
     tasks: ["view", "create", "edit", "delete"],
     quotes: ["view", "create", "edit"],
@@ -70,6 +78,10 @@ export const ROLE_MATRIX: Record<UserRole, Partial<Record<Resource, Action[]>>> 
   supervisor: {
     dashboard: ["view"],
     leads: ["view", "create", "edit", "assign", "reassign", "export"],
+    remarketing: ["view", "create", "edit", "assign", "reassign", "export"],
+    calendar: ["view", "create", "edit", "delete", "assign"],
+    templates: ["view", "create", "edit"],
+    whatsapp: ["view"],
     clients: ["view", "create", "edit", "export"],
     tasks: ["view", "create", "edit", "delete", "assign"],
     quotes: ["view", "create", "edit", "approve"],
@@ -85,16 +97,29 @@ export const ROLE_MATRIX: Record<UserRole, Partial<Record<Resource, Action[]>>> 
   },
   recepcion: {
     dashboard: ["view"],
-    leads: ["view", "create", "assign", "reassign"],
-    clients: ["view", "create"],
-    tasks: ["view", "create"],
+    // Contactos: ver, crear, editar datos básicos, asignar/derivar. Sin eliminar.
+    leads: ["view", "create", "edit", "assign", "reassign"],
+    remarketing: ["view", "assign", "reassign", "edit"],
+    clients: ["view", "create", "edit"],
+    tasks: ["view", "create", "edit"],
+    // Calendario operativo: crear, editar/reprogramar y asignar. Sin eliminar.
+    calendar: ["view", "create", "edit", "assign"],
+    // Plantillas de WhatsApp: solo uso, sin edición.
+    templates: ["view"],
+    whatsapp: ["view"],
+    // Stock: solo lectura (sin editar precios, ni marcar vendido, ni eliminar).
     products: ["view"],
     stock: ["view"],
+    // Configuración operativa únicamente (perfil, notificaciones, calendario, firma).
     settings: ["view"],
   },
   admin: {
     dashboard: ALL,
     leads: ALL,
+    remarketing: ALL,
+    calendar: ALL,
+    templates: ALL,
+    whatsapp: ALL,
     clients: ALL,
     tasks: ALL,
     quotes: ALL,

@@ -166,6 +166,43 @@ export default function LeadDetail() {
                   </div>
                 );
               })()}
+              {lead.status === "remarketing" && (
+                <div className="space-y-1.5 rounded-lg border border-fuchsia-500/40 bg-fuchsia-500/5 p-3 text-xs">
+                  <p className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <span className="size-2 rounded-full bg-fuchsia-500" aria-hidden /> Estado: Remarketing
+                  </p>
+                  <Row label="Vendedor responsable" value={seller?.name ?? "Sin asignar"} />
+                  <Row label="Pasó a Remarketing" value={lead.remarketing_since ? fmtDateTime(lead.remarketing_since) : "—"} />
+                  {lead.remarketing_reason && <Row label="Motivo" value={lead.remarketing_reason} />}
+                  <Row label="Próximo contacto" value={lead.next_contact_at ? fmtDate(lead.next_contact_at) : "Sin programar"} />
+                  <Row
+                    label="Última interacción"
+                    value={
+                      leadInteractions[0]
+                        ? `${INTERACTION_LABEL[leadInteractions[0].type]} · ${fmtDateTime(leadInteractions[0].created_at)}`
+                        : "Sin interacciones"
+                    }
+                  />
+                  {!seller && (
+                    <p className="pt-1 text-muted-foreground">
+                      Sin responsable: visible para administración y recepción para asignación manual.
+                    </p>
+                  )}
+                  <Button asChild size="sm" variant="outline" className="mt-1">
+                    <Link to="/remarketing">Ver bandeja de Remarketing</Link>
+                  </Button>
+                </div>
+              )}
+              {lead.status !== "remarketing" && !isClosed(lead) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  className="w-full"
+                  onClick={() => changeStatus("remarketing")}
+                >
+                  Enviar a Remarketing
+                </Button>
+              )}
               {isClosed(lead) && (
                 <div className="space-y-2 rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-3 text-xs">
                   <p className="font-medium text-foreground">Lead cerrado — acciones de remarketing</p>
@@ -177,13 +214,13 @@ export default function LeadDetail() {
                       size="sm"
                       variant="ghost"
                       onClick={() => {
+                        changeStatus("remarketing");
                         addInteraction({
                           lead_id: lead.id,
                           user_id: currentUser?.id ?? "user_v1",
                           type: "nota",
                           note: "Incluido en campaña de remarketing.",
                         });
-                        toast("Marcado para remarketing");
                       }}
                     >
                       Enviar a remarketing

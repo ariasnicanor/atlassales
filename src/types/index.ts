@@ -15,6 +15,7 @@ export type LeadStatus =
   | "proximo_a_vender"
   | "vendido"
   | "sin_gestion"
+  | "remarketing"
   | "cerrado"
   // Valores legacy tolerados para datos preexistentes.
   | "en_seguimiento"
@@ -122,6 +123,10 @@ export interface Lead {
   notes?: string | null;
   /** Última gestión registrada (mensaje, llamada, nota o cambio de estado). */
   last_management_at?: ISODate | null;
+  /** Fecha/hora en la que el lead pasó al estado Remarketing. */
+  remarketing_since?: ISODate | null;
+  /** Motivo por el que entró a Remarketing (auto / manual). */
+  remarketing_reason?: string | null;
   /** Atribución de campaña (UTMs capturados al llegar el lead). */
   utm_source?: string | null;
   utm_medium?: string | null;
