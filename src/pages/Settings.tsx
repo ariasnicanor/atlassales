@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { Waves, Palette, Save, RotateCcw, UserRound, Lock, Calendar, RefreshCw, Link2, Unlink, Target, Shuffle, Plus, Trash2 } from "lucide-react";
+import { Waves, Palette, Save, RotateCcw, UserRound, Lock, Calendar, RefreshCw, Link2, Unlink, Target, Shuffle, Plus, Trash2, Bell } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
