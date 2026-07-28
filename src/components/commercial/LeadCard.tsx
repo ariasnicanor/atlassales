@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Phone, MessageCircle, ChevronRight, Clock, UserRound, FileText, Calculator } from "lucide-react";
+import { Phone, MessageCircle, ChevronRight, Clock, UserRound, FileText, Calculator, Activity } from "lucide-react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Avatar } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
@@ -13,6 +13,7 @@ import { useData } from "@/data/store";
 import { useSession } from "@/context/session";
 import { can } from "@/lib/permissions";
 import { useToast } from "@/components/ui/toast";
+import { daysWithoutManagement, stalenessInfo, isClosed } from "@/lib/lead-management";
 
 interface LeadCardProps {
   lead: Lead;
@@ -28,6 +29,9 @@ export function LeadCard({ lead, seller }: LeadCardProps) {
   const sellers = users.filter((u) => u.role === "vendedor" || u.role === "supervisor");
   const quoteCount = quotes.filter((q) => q.lead_id === lead.id).length;
   const simCount = simulations.filter((s) => s.lead_id === lead.id).length;
+  const staleDays = daysWithoutManagement(lead);
+  const stale = stalenessInfo(staleDays);
+  const closed = isClosed(lead);
 
   return (
     <Card className="transition-shadow hover:shadow-md">
@@ -79,6 +83,29 @@ export function LeadCard({ lead, seller }: LeadCardProps) {
           <div className={cn("flex items-center gap-1.5 text-xs", overdue ? "text-destructive" : "text-muted-foreground")}>
             <Clock className="size-3.5" />
             Próximo contacto {fromNow(lead.next_contact_at)}
+          </div>
+        )}
+
+        {/* Días sin gestión — indicador de color */}
+        <div className={cn("flex items-center gap-1.5 text-xs font-medium", stale.className)}>
+          <span className={cn("size-2 rounded-full", stale.dotClass)} aria-hidden />
+          <Activity className="size-3.5" />
+          {stale.label}
+        </div>
+
+        {closed && (
+          <div className="rounded-lg border border-dashed border-muted-foreground/30 bg-muted/30 p-2 text-xs text-muted-foreground">
+            Lead cerrado — disponible para remarketing.{" "}
+            <button
+              type="button"
+              className="font-medium text-primary hover:underline"
+              onClick={() => {
+                updateLead(lead.id, { status: "contactado" });
+                toast("Lead reactivado como Contactado");
+              }}
+            >
+              Reactivar
+            </button>
           </div>
         )}
 
