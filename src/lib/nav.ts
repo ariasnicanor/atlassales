@@ -68,17 +68,17 @@ export const MORE_GROUPS: NavGroup[] = [
   {
     title: "Gestión",
     items: [
-      { label: "Reportes", path: "/reports", icon: BarChart3, moduleKey: "reports", tier: "core", roles: ["admin", "supervisor"] },
+      { label: "Reportes", path: "/reports", icon: BarChart3, moduleKey: "reports", tier: "core", roles: ["admin", "supervisor"], feature: "view_reports" },
       { label: "Usuarios", path: "/users", icon: UsersRound, moduleKey: "users", tier: "core", roles: ["admin", "supervisor"] },
       { label: "Clientes", path: "/clients", icon: Contact, moduleKey: "clients", tier: "core", roles: ["admin"] },
-      { label: "Auditoría", path: "/audit", icon: ShieldCheck, moduleKey: "audit", tier: "core", roles: ["admin"] },
+      { label: "Auditoría", path: "/audit", icon: ShieldCheck, moduleKey: "audit", tier: "core", roles: ["admin"], feature: "view_audit" },
       { label: "Configuración", path: "/settings", icon: Settings, moduleKey: "settings", tier: "core", roles: ["admin", "supervisor", "vendedor"] },
     ],
   },
   {
     title: "Canales",
     items: [
-      { label: "WhatsApp", path: "/whatsapp", icon: MessageCircle, moduleKey: "whatsapp", tier: "core" },
+      { label: "WhatsApp", path: "/whatsapp", icon: MessageCircle, moduleKey: "whatsapp", tier: "core", feature: "whatsapp" },
     ],
   },
   {
