@@ -60,8 +60,7 @@ function saveConnection(userId: string, conn: GCalConnection) {
 /** ¿Hay credenciales reales configuradas? (VITE_GOOGLE_CLIENT_ID). */
 export function hasRealCredentials(): boolean {
   try {
-    // @ts-expect-error import.meta.env narrowing
-    return Boolean(import.meta.env?.VITE_GOOGLE_CLIENT_ID);
+    return Boolean((import.meta as { env?: Record<string, string> }).env?.VITE_GOOGLE_CLIENT_ID);
   } catch {
     return false;
   }
