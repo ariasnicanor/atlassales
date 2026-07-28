@@ -12,6 +12,8 @@ import { useData } from "@/data/store";
 import { useSession } from "@/context/session";
 import { useToast } from "@/components/ui/toast";
 import { can, roleLabel } from "@/lib/permissions";
+import { FEATURES, hasFeature, featureDefault } from "@/lib/features";
+import { Switch } from "@/components/ui/switch";
 import {
   getConnection,
   connectGoogleCalendar,
