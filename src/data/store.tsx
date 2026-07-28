@@ -25,7 +25,7 @@ import type {
 } from "@/types";
 import { buildSeedState } from "./seed";
 import { uid } from "@/lib/utils";
-import { AUTO_CLOSE_DAYS, daysWithoutManagement, CLOSED_STATUSES } from "@/lib/lead-management";
+import { AUTO_CLOSE_DAYS, daysWithoutManagement, NO_AUTO_SWEEP } from "@/lib/lead-management";
 import { pushEventToGoogle, removeEventFromGoogle, getConnection } from "@/lib/google-calendar";
 import { getStoredUtm, fireLeadConversion, clearStoredUtm } from "@/lib/tracking";
 import { pickAssignee } from "@/lib/lead-distribution";
@@ -79,6 +79,8 @@ function loadState(): DataState {
       parsed.leads = parsed.leads.map((l) => ({
         ...l,
         last_management_at: l.last_management_at ?? l.updated_at ?? l.created_at,
+        remarketing_since: l.remarketing_since ?? (l.status === "remarketing" ? l.updated_at : null),
+        remarketing_reason: l.remarketing_reason ?? null,
       }));
       return parsed;
     }
@@ -146,27 +148,36 @@ export function DataProvider({ children }: { children: ReactNode }) {
     }
   }, [state]);
 
-  // Auto-cierre: leads sin gestión >= AUTO_CLOSE_DAYS pasan a "cerrado".
+  // Barrido: leads sin gestión >= AUTO_CLOSE_DAYS pasan a "remarketing"
+  // conservando su vendedor asignado (no se reasignan automáticamente).
   useEffect(() => {
     const sweep = () => {
       setState((s) => {
         const stale = s.leads.filter(
-          (l) => !CLOSED_STATUSES.includes(l.status) && daysWithoutManagement(l) >= AUTO_CLOSE_DAYS
+          (l) => !NO_AUTO_SWEEP.includes(l.status) && daysWithoutManagement(l) >= AUTO_CLOSE_DAYS
         );
         if (stale.length === 0) return s;
         const staleIds = new Set(stale.map((l) => l.id));
         const now = new Date().toISOString();
         const leads = s.leads.map((l) =>
-          staleIds.has(l.id) ? { ...l, status: "cerrado" as const, updated_at: now } : l
+          staleIds.has(l.id)
+            ? {
+                ...l,
+                status: "remarketing" as const,
+                remarketing_since: l.remarketing_since ?? now,
+                remarketing_reason: `Sin gestión ${AUTO_CLOSE_DAYS}+ días`,
+                updated_at: now,
+              }
+            : l
         );
         const auditEntries: AuditLogEntry[] = stale.map((l) => ({
           id: uid("audit"),
           user_id: null,
           user_name: "Sistema",
-          action: "auto_close",
+          action: "auto_remarketing",
           resource: "lead",
           resource_id: l.id,
-          meta: `Sin gestión hace ${daysWithoutManagement(l)}d`,
+          meta: `Derivado a Remarketing · sin gestión hace ${daysWithoutManagement(l)}d`,
           created_at: now,
         }));
         return { ...s, leads, auditLog: [...auditEntries, ...s.auditLog].slice(0, 500) };
@@ -252,6 +263,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
           next_contact_at: input.next_contact_at ?? null,
           notes: input.notes ?? null,
           last_management_at: now,
+          remarketing_since: input.status === "remarketing" ? now : null,
+          remarketing_reason: input.remarketing_reason ?? null,
           utm_source: input.utm_source ?? utm?.utm_source ?? null,
           utm_medium: input.utm_medium ?? utm?.utm_medium ?? null,
           utm_campaign: input.utm_campaign ?? utm?.utm_campaign ?? null,
@@ -308,9 +321,17 @@ export function DataProvider({ children }: { children: ReactNode }) {
               // Si el patch trae explícitamente last_management_at (ej. auto-cierre),
               // lo respetamos; si no, cualquier edición manual cuenta como gestión.
               const bumpMgmt = patch.last_management_at === undefined;
+              const enteringRemarketing =
+                patch.status === "remarketing" && l.status !== "remarketing";
               return {
                 ...l,
                 ...patch,
+                remarketing_since: enteringRemarketing
+                  ? patch.remarketing_since ?? now
+                  : patch.remarketing_since ?? l.remarketing_since ?? null,
+                remarketing_reason: enteringRemarketing
+                  ? patch.remarketing_reason ?? "Derivado manualmente"
+                  : patch.remarketing_reason ?? l.remarketing_reason ?? null,
                 updated_at: now,
                 last_management_at: bumpMgmt ? now : patch.last_management_at ?? l.last_management_at,
               };
