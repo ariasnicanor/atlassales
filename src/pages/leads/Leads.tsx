@@ -82,9 +82,19 @@ export default function Leads() {
         title="Leads"
         description="Tu pipeline comercial. Filtrá, seguí y no pierdas oportunidades."
         actions={
-          <Button onClick={() => navigate("/leads/new")} size="icon" aria-label="Nuevo lead">
-            <Plus className="size-4" />
-          </Button>
+          <div className="flex items-center gap-2">
+            {canImport && (
+              <Button variant="outline" asChild size="sm">
+                <Link to="/leads/import" aria-label="Importar leads">
+                  <Upload className="size-4" />
+                  <span className="hidden sm:inline">Importar</span>
+                </Link>
+              </Button>
+            )}
+            <Button onClick={() => navigate("/leads/new")} size="icon" aria-label="Nuevo lead">
+              <Plus className="size-4" />
+            </Button>
+          </div>
         }
       />
 
