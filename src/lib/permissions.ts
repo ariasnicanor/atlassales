@@ -12,6 +12,7 @@ export type Action =
   | "assign"
   | "reassign"
   | "approve"
+  | "request"
   | "export"
   | "manage";
 
