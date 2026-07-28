@@ -34,9 +34,19 @@ export function useScopedData() {
         ? new Set(teamMemberIds(currentUser, data.users))
         : new Set([currentUser.id]);
 
+    // Recepción y Supervisor además ven los contactos sin responsable
+    // (típicamente los que cayeron a Remarketing) para poder asignarlos.
+    const seesUnassigned =
+      currentUser.role === "recepcion" || currentUser.role === "supervisor";
+
     return {
-      leads: data.leads.filter((l) => l.assigned_user_id && allowedIds.has(l.assigned_user_id)),
+      leads: data.leads.filter((l) =>
+        l.assigned_user_id
+          ? allowedIds.has(l.assigned_user_id)
+          : seesUnassigned
+      ),
       tasks: data.tasks.filter((t) => t.assigned_user_id && allowedIds.has(t.assigned_user_id)),
+
       quotes: data.quotes.filter((q) => allowedIds.has(q.user_id)),
       sales: data.sales.filter((s) => allowedIds.has(s.user_id)),
       interactions: data.interactions.filter((i) => allowedIds.has(i.user_id)),
