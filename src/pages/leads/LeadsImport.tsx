@@ -80,7 +80,7 @@ export default function LeadsImport() {
   const [importing, setImporting] = useState(false);
 
   const role = currentUser?.role;
-  const canImport = role === "admin" || role === "supervisor";
+  const canImport = hasFeature(currentUser, "import_leads");
 
   const sellers = useMemo(
     () => users.filter((u) => u.active !== false && u.role === "vendedor"),
