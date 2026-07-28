@@ -125,6 +125,35 @@ export default function LeadDetail() {
     toast("Interacción registrada");
   };
 
+  const submitTask = () => {
+    const title = taskTitle.trim() || `Contactar a ${lead.name}`;
+    if (!taskDate) {
+      toast("Elegí una fecha para la tarea", "warning");
+      return;
+    }
+    createTask({
+      lead_id: lead.id,
+      assigned_user_id: lead.assigned_user_id ?? currentUser?.id ?? null,
+      title,
+      description: taskDesc.trim() || null,
+      due_date: taskDate,
+      due_time: taskTime || null,
+      priority: taskPriority,
+      status: "pendiente",
+    });
+    addInteraction({
+      lead_id: lead.id,
+      user_id: currentUser?.id ?? "user_v1",
+      type: "nota",
+      note: `Tarea creada: ${title} — ${taskDate}${taskTime ? ` ${taskTime}` : ""}`,
+    });
+    setTaskTitle("");
+    setTaskDesc("");
+    toast("Tarea creada y agendada en el calendario");
+  };
+
+
+
   const handleDelete = () => {
     if (confirm(`¿Eliminar el lead "${lead.name}"?`)) {
       deleteLead(lead.id);
