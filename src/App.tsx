@@ -1,5 +1,6 @@
 import { Routes, Route, Navigate, BrowserRouter } from "react-router-dom";
 import { AppLayout } from "@/components/layout/AppLayout";
+import { RequirePermission } from "@/components/layout/RequirePermission";
 import { DataProvider } from "@/data/store";
 import { SessionProvider } from "@/context/session";
 import { BrandingProvider } from "@/components/BrandingProvider";
@@ -12,6 +13,7 @@ import Onboarding from "@/pages/Onboarding";
 import Audit from "@/pages/Audit";
 import Dashboard from "@/pages/Dashboard";
 import Leads from "@/pages/leads/Leads";
+import Remarketing from "@/pages/leads/Remarketing";
 import LeadsImport from "@/pages/leads/LeadsImport";
 import LeadDetail from "@/pages/leads/LeadDetail";
 import LeadForm from "@/pages/leads/LeadForm";
@@ -46,28 +48,29 @@ function AppRoutes() {
       <Route element={<AppLayout />}>
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
         <Route path="/dashboard" element={<Dashboard />} />
-        <Route path="/leads" element={<Leads />} />
-        <Route path="/leads/import" element={<LeadsImport />} />
-        <Route path="/leads/new" element={<LeadForm />} />
-        <Route path="/leads/:id" element={<LeadDetail />} />
-        <Route path="/leads/:id/edit" element={<LeadForm />} />
-        <Route path="/clients" element={<Clients />} />
-        <Route path="/clients/:id" element={<ClientDetail />} />
-        <Route path="/stock" element={<Stock />} />
-        <Route path="/stock/:id" element={<ProductDetail />} />
-        <Route path="/tasks" element={<Tasks />} />
-        <Route path="/calendar" element={<CalendarPage />} />
-        <Route path="/whatsapp" element={<WhatsAppPage />} />
-        <Route path="/users" element={<Users />} />
-        <Route path="/audit" element={<Audit />} />
-        <Route path="/reports" element={<Reports />} />
-        <Route path="/settings" element={<Settings />} />
+        <Route path="/leads" element={<RequirePermission resource="leads"><Leads /></RequirePermission>} />
+        <Route path="/leads/import" element={<RequirePermission action="create" resource="leads" feature="import_leads"><LeadsImport /></RequirePermission>} />
+        <Route path="/leads/new" element={<RequirePermission action="create" resource="leads"><LeadForm /></RequirePermission>} />
+        <Route path="/leads/:id" element={<RequirePermission resource="leads"><LeadDetail /></RequirePermission>} />
+        <Route path="/leads/:id/edit" element={<RequirePermission action="edit" resource="leads"><LeadForm /></RequirePermission>} />
+        <Route path="/clients" element={<RequirePermission resource="clients"><Clients /></RequirePermission>} />
+        <Route path="/clients/:id" element={<RequirePermission resource="clients"><ClientDetail /></RequirePermission>} />
+        <Route path="/stock" element={<RequirePermission resource="stock"><Stock /></RequirePermission>} />
+        <Route path="/stock/:id" element={<RequirePermission resource="stock"><ProductDetail /></RequirePermission>} />
+        <Route path="/tasks" element={<RequirePermission resource="tasks"><Tasks /></RequirePermission>} />
+        <Route path="/calendar" element={<RequirePermission resource="calendar"><CalendarPage /></RequirePermission>} />
+        <Route path="/remarketing" element={<RequirePermission resource="remarketing"><Remarketing /></RequirePermission>} />
+        <Route path="/whatsapp" element={<RequirePermission resource="whatsapp" feature="whatsapp"><WhatsAppPage /></RequirePermission>} />
+        <Route path="/users" element={<RequirePermission resource="users"><Users /></RequirePermission>} />
+        <Route path="/audit" element={<RequirePermission resource="audit" feature="view_audit"><Audit /></RequirePermission>} />
+        <Route path="/reports" element={<RequirePermission resource="reports" feature="view_reports"><Reports /></RequirePermission>} />
+        <Route path="/settings" element={<RequirePermission resource="settings"><Settings /></RequirePermission>} />
         <Route path="/growth/simulator" element={<Simulator />} />
         <Route path="/growth/quoter" element={<Quoter />} />
-        <Route path="/growth/commissions" element={<Commissions />} />
+        <Route path="/growth/commissions" element={<RequirePermission resource="commissions"><Commissions /></RequirePermission>} />
         <Route path="/growth/goals" element={<Goals />} />
         <Route path="/growth/ranking" element={<Ranking />} />
-        <Route path="/growth/templates" element={<Templates />} />
+        <Route path="/growth/templates" element={<RequirePermission resource="templates"><Templates /></RequirePermission>} />
         <Route path="/automation" element={<Automation />} />
         <Route path="/ai-assist" element={<AiAssist />} />
         <Route path="/ai-agent" element={<AiAgent />} />
