@@ -413,3 +413,95 @@ function PixelSection() {
     </Card>
   );
 }
+
+// ─────────────────────────────────────────────────────────────
+// Funciones por usuario (Admin) — overrides finos sobre ROLE_MATRIX
+// ─────────────────────────────────────────────────────────────
+function FeatureOverridesSection() {
+  const { users, updateUser } = useData();
+  const { toast } = useToast();
+  const [selectedId, setSelectedId] = useState<string>(() => users[0]?.id ?? "");
+  const user = users.find((u) => u.id === selectedId) ?? users[0];
+
+  if (!user) return null;
+
+  const applicable = FEATURES.filter((f) => f.appliesTo.includes(user.role));
+
+  const setOverride = (key: string, value: boolean | null) => {
+    const next = { ...(user.feature_overrides ?? {}) };
+    if (value === null) delete next[key];
+    else next[key] = value;
+    updateUser(user.id, { feature_overrides: next });
+    toast(`Función actualizada para ${user.name}`);
+  };
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle className="flex items-center gap-2">
+          <Lock className="size-5 text-primary" /> Funciones por usuario
+          <Badge variant="secondary">Admin</Badge>
+        </CardTitle>
+      </CardHeader>
+      <CardContent className="space-y-4">
+        <Field label="Usuario">
+          <Select value={selectedId} onChange={(e) => setSelectedId(e.target.value)}>
+            {users.map((u) => (
+              <option key={u.id} value={u.id}>
+                {u.name} · {roleLabel(u.role)}
+              </option>
+            ))}
+          </Select>
+        </Field>
+
+        <div className="divide-y rounded-xl border">
+          {applicable.map((f) => {
+            const override = user.feature_overrides?.[f.key];
+            const active = hasFeature(user, f.key);
+            const base = featureDefault(f, user);
+            return (
+              <div key={f.key} className="flex items-start justify-between gap-4 p-3">
+                <div className="min-w-0 flex-1">
+                  <div className="flex flex-wrap items-center gap-2">
+                    <p className="font-medium">{f.label}</p>
+                    {typeof override === "boolean" ? (
+                      <Badge variant="secondary" className="text-[10px]">
+                        Forzado {override ? "ON" : "OFF"}
+                      </Badge>
+                    ) : (
+                      <Badge variant="muted" className="text-[10px]">
+                        Default rol: {base ? "ON" : "OFF"}
+                      </Badge>
+                    )}
+                  </div>
+                  <p className="text-xs text-muted-foreground">{f.description}</p>
+                  {typeof override === "boolean" && (
+                    <button
+                      type="button"
+                      onClick={() => setOverride(f.key, null)}
+                      className="mt-1 text-[11px] text-primary hover:underline"
+                    >
+                      Volver al default del rol
+                    </button>
+                  )}
+                </div>
+                <Switch
+                  checked={active}
+                  onCheckedChange={(v) => setOverride(f.key, v)}
+                  aria-label={f.label}
+                />
+              </div>
+            );
+          })}
+        </div>
+
+        <p className="text-xs text-muted-foreground">
+          Los cambios se aplican en tiempo real — el usuario los ve sin necesidad de volver a loguearse.
+          Los overrides se suman por encima del rol: podés activar una función bloqueada por default o
+          bloquear una habilitada.
+        </p>
+      </CardContent>
+    </Card>
+  );
+}
+
