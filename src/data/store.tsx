@@ -343,14 +343,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
       },
 
       updateTask: (id, patch) => {
+        let updated: Task | undefined;
         withAudit(
-          (s) => ({
-            ...s,
-            tasks: s.tasks.map((t) => (t.id === id ? { ...t, ...patch } : t)),
-          }),
+          (s) => {
+            const tasks = s.tasks.map((t) => {
+              if (t.id !== id) return t;
+              updated = { ...t, ...patch };
+              return updated;
+            });
+            return { ...s, tasks };
+          },
           { action: "update", resource: "task", resource_id: id }
         );
-        const updated = stateRef.current.tasks.find((t) => t.id === id);
         if (updated) syncTaskToGCal(updated);
       },
 
