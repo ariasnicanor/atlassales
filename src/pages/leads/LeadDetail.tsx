@@ -33,12 +33,26 @@ import { fmtDate, fmtDateTime, fromNow } from "@/lib/date";
 import { LEAD_STATUS_LABEL, LEAD_STATUS_ORDER, INTERACTION_LABEL } from "@/lib/labels";
 import { daysWithoutManagement, stalenessInfo, isClosed } from "@/lib/lead-management";
 import { cn } from "@/lib/utils";
+import { can } from "@/lib/permissions";
 import type { InteractionType, LeadStatus, Temperature } from "@/types";
 
 export default function LeadDetail() {
   const { id } = useParams();
   const navigate = useNavigate();
-  const { leads, users, interactions, aiScores, quotes, simulations, products, updateLead, addInteraction, deleteLead } = useData();
+  const {
+    leads,
+    users,
+    interactions,
+    aiScores,
+    quotes,
+    simulations,
+    products,
+    updateLead,
+    addInteraction,
+    deleteLead,
+    remarketingRequests,
+    requestRemarketingLead,
+  } = useData();
   const { currentUser } = useSession();
   const { hasModule } = usePlan();
   const { toast } = useToast();
@@ -46,6 +60,13 @@ export default function LeadDetail() {
   const lead = leads.find((l) => l.id === id);
   const [intType, setIntType] = useState<InteractionType>("llamada");
   const [intNote, setIntNote] = useState("");
+  const [requestNote, setRequestNote] = useState("");
+
+  const canViewRemarketing = can(currentUser, "view", "remarketing");
+  const canRequestRemarketing = can(currentUser, "request", "remarketing");
+  const pendingRequest = remarketingRequests.find(
+    (r) => r.lead_id === id && r.status === "pendiente" && r.requested_by === currentUser?.id
+  );
 
   if (!lead) {
     return (
