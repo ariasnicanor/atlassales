@@ -38,13 +38,14 @@ export function useScopedData() {
     // (típicamente los que cayeron a Remarketing) para poder asignarlos.
     const seesUnassigned =
       currentUser.role === "recepcion" || currentUser.role === "supervisor";
+    // Recepción ve TODA la bandeja de Remarketing, no solo la propia.
+    const seesAllRemarketing = currentUser.role === "recepcion";
 
     return {
-      leads: data.leads.filter((l) =>
-        l.assigned_user_id
-          ? allowedIds.has(l.assigned_user_id)
-          : seesUnassigned
-      ),
+      leads: data.leads.filter((l) => {
+        if (seesAllRemarketing && l.status === "remarketing") return true;
+        return l.assigned_user_id ? allowedIds.has(l.assigned_user_id) : seesUnassigned;
+      }),
       tasks: data.tasks.filter((t) => t.assigned_user_id && allowedIds.has(t.assigned_user_id)),
 
       quotes: data.quotes.filter((q) => allowedIds.has(q.user_id)),

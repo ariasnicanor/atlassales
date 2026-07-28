@@ -149,7 +149,6 @@ const PROFILE_ORDER: Record<UserRole, string[]> = {
   vendedor: [
     "/dashboard",
     "/leads",
-    "/remarketing",
     "/whatsapp",
     "/tasks",
     "/calendar",

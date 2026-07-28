@@ -12,6 +12,7 @@ export type Action =
   | "assign"
   | "reassign"
   | "approve"
+  | "request"
   | "export"
   | "manage";
 
@@ -47,6 +48,7 @@ const ALL: Action[] = [
   "assign",
   "reassign",
   "approve",
+  "request",
   "export",
   "manage",
 ];
@@ -60,7 +62,8 @@ export const ROLE_MATRIX: Record<UserRole, Partial<Record<Resource, Action[]>>> 
   vendedor: {
     dashboard: ["view"],
     leads: ["view", "create", "edit"],
-    remarketing: ["view", "edit"],
+    // Sin acceso a la bandeja de Remarketing: solo puede SOLICITAR recuperar un lead.
+    remarketing: ["request"],
     calendar: ["view", "create", "edit"],
     templates: ["view"],
     whatsapp: ["view"],
@@ -78,7 +81,7 @@ export const ROLE_MATRIX: Record<UserRole, Partial<Record<Resource, Action[]>>> 
   supervisor: {
     dashboard: ["view"],
     leads: ["view", "create", "edit", "assign", "reassign", "export"],
-    remarketing: ["view", "create", "edit", "assign", "reassign", "export"],
+    remarketing: ["view", "create", "edit", "assign", "reassign", "approve", "export"],
     calendar: ["view", "create", "edit", "delete", "assign"],
     templates: ["view", "create", "edit"],
     whatsapp: ["view"],

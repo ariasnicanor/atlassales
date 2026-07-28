@@ -18,6 +18,7 @@ import type {
   MessageTemplate,
   Product,
   Quote,
+  RemarketingRequest,
   FinancialSimulation,
   Task,
   User,
@@ -67,6 +68,7 @@ function loadState(): DataState {
     if (raw) {
       const parsed = JSON.parse(raw) as DataState;
       if (!parsed.auditLog) parsed.auditLog = [];
+      if (!parsed.remarketingRequests) parsed.remarketingRequests = [];
       if (!parsed.leadDistribution) {
         parsed.leadDistribution = {
           mode: "round_robin",
@@ -130,6 +132,14 @@ interface DataContextValue extends DataState {
   updateDistributionConfig: (patch: Partial<import("@/types").LeadDistributionConfig>) => void;
   /** Registra un evento en el log de auditoría con el usuario actual. */
   logAudit: (entry: AuditInput) => void;
+  /** Un vendedor solicita recuperar un lead que cayó en Remarketing. */
+  requestRemarketingLead: (leadId: string, note?: string | null) => void;
+  /** Supervisor/Admin aprueba o rechaza la solicitud. */
+  resolveRemarketingRequest: (
+    id: string,
+    status: "aprobada" | "rechazada",
+    note?: string | null
+  ) => void;
   /** Session pasa el usuario actual acá para que el store lo use en auditoría. */
   _setActor: (user: User | null) => void;
 }
@@ -223,6 +233,81 @@ export function DataProvider({ children }: { children: ReactNode }) {
       },
 
       logAudit: (entry) => setState((s) => pushAudit(s, entry)),
+
+      requestRemarketingLead: (leadId, note) => {
+        const actor = actorRef.current;
+        if (!actor) return;
+        const now = nowIso();
+        withAudit(
+          (s) => {
+            const lead = s.leads.find((l) => l.id === leadId);
+            if (!lead) return s;
+            const already = s.remarketingRequests.some(
+              (r) => r.lead_id === leadId && r.requested_by === actor.id && r.status === "pendiente"
+            );
+            if (already) return s;
+            const req: RemarketingRequest = {
+              id: uid("rmreq"),
+              company_id: s.company.id,
+              lead_id: leadId,
+              lead_name: lead.name,
+              requested_by: actor.id,
+              requested_by_name: actor.name,
+              note: note ?? null,
+              status: "pendiente",
+              created_at: now,
+            };
+            return { ...s, remarketingRequests: [req, ...s.remarketingRequests] };
+          },
+          { action: "remarketing_request", resource: "lead", resource_id: leadId, meta: note ?? null }
+        );
+      },
+
+      resolveRemarketingRequest: (id, status, note) => {
+        const actor = actorRef.current;
+        const now = nowIso();
+        withAudit(
+          (s) => {
+            const req = s.remarketingRequests.find((r) => r.id === id);
+            if (!req || req.status !== "pendiente") return s;
+            const requests = s.remarketingRequests.map((r) =>
+              r.id === id
+                ? {
+                    ...r,
+                    status,
+                    resolved_by: actor?.id ?? null,
+                    resolved_by_name: actor?.name ?? "Sistema",
+                    resolution_note: note ?? null,
+                    resolved_at: now,
+                  }
+                : r
+            );
+            const leads =
+              status === "aprobada"
+                ? s.leads.map((l) =>
+                    l.id === req.lead_id
+                      ? {
+                          ...l,
+                          status: "contactado" as const,
+                          assigned_user_id: req.requested_by,
+                          remarketing_since: null,
+                          remarketing_reason: null,
+                          last_management_at: now,
+                          updated_at: now,
+                        }
+                      : l
+                  )
+                : s.leads;
+            return { ...s, leads, remarketingRequests: requests };
+          },
+          {
+            action: status === "aprobada" ? "remarketing_request_approved" : "remarketing_request_rejected",
+            resource: "lead",
+            resource_id: id,
+            meta: note ?? null,
+          }
+        );
+      },
 
       updateCompany: (patch) =>
         withAudit(

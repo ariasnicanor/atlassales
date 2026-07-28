@@ -332,5 +332,25 @@ export interface DataState {
   aiScores: AiLeadScore[];
   auditLog: AuditLogEntry[];
   leadDistribution: LeadDistributionConfig;
+  remarketingRequests: RemarketingRequest[];
+}
+
+export type RemarketingRequestStatus = "pendiente" | "aprobada" | "rechazada";
+
+/** Solicitud de un vendedor para recuperar un lead que cayó en Remarketing. */
+export interface RemarketingRequest {
+  id: UUID;
+  company_id: UUID;
+  lead_id: UUID;
+  lead_name: string;
+  requested_by: UUID;
+  requested_by_name: string;
+  note?: string | null;
+  status: RemarketingRequestStatus;
+  resolved_by?: UUID | null;
+  resolved_by_name?: string | null;
+  resolution_note?: string | null;
+  resolved_at?: ISODate | null;
+  created_at: ISODate;
 }
 
