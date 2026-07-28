@@ -18,6 +18,16 @@ function isThisMonth(iso: string) {
   return d.getMonth() === now.getMonth() && d.getFullYear() === now.getFullYear();
 }
 
+function progressTone(progress: number) {
+  if (progress >= 100)
+    return { text: "text-success", bar: "bg-success", border: "border-success/40", badge: "success" as const, label: "Objetivo cumplido" };
+  if (progress >= 75)
+    return { text: "text-primary", bar: "bg-primary", border: "", badge: "secondary" as const, label: "Casi ahí" };
+  if (progress >= 40)
+    return { text: "text-warning", bar: "bg-warning", border: "", badge: "muted" as const, label: "En camino" };
+  return { text: "text-destructive", bar: "bg-destructive", border: "", badge: "muted" as const, label: "Vas atrasado" };
+}
+
 function GoalsInner() {
   const { goals, sales, users } = useData();
   const { currentUser } = useSession();
@@ -43,6 +53,14 @@ function GoalsInner() {
 
   return (
     <div className="space-y-6">
+      {!seeTeam && rows.length === 0 && (
+        <Card>
+          <CardContent className="p-6 text-sm text-muted-foreground">
+            Todavía no tenés un objetivo mensual asignado. Pedile a tu supervisor que cargue uno.
+          </CardContent>
+        </Card>
+      )}
+
       {seeTeam && teamGoal && (
         <Card className="border-primary/30">
           <CardHeader><CardTitle className="flex items-center gap-2"><Target className="size-5 text-primary" /> Objetivo del equipo</CardTitle></CardHeader>
@@ -59,24 +77,59 @@ function GoalsInner() {
         </Card>
       )}
 
-      <div className="grid gap-4 sm:grid-cols-2">
-        {rows.map(({ goal, user, achieved, progress }) => (
-          <Card key={goal.id}>
-            <CardContent className="space-y-3 p-4">
-              <div className="flex items-center gap-3">
-                <Avatar name={user?.name ?? "?"} size="sm" />
-                <div className="min-w-0 flex-1">
-                  <p className="truncate font-medium">{user?.name}</p>
-                  <p className="text-xs text-muted-foreground">Meta: {formatCurrency(goal.target_amount)} · {goal.target_units} u.</p>
+      <div className={seeTeam ? "grid gap-4 sm:grid-cols-2" : "grid gap-4"}>
+        {rows.map(({ goal, user, achieved, progress }) => {
+          const tone = progressTone(progress);
+          const remaining = Math.max(0, goal.target_amount - achieved);
+          return (
+            <Card key={goal.id} className={tone.border}>
+              <CardContent className="p-4">
+                <div className="flex items-start gap-4">
+                  <div className="min-w-0 flex-1 space-y-3">
+                    <div className="flex items-center gap-3">
+                      <Avatar name={user?.name ?? "?"} size="sm" />
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{user?.name}</p>
+                        <p className="text-xs text-muted-foreground">
+                          Objetivo mensual: {formatCurrency(goal.target_amount)} · {goal.target_units} u.
+                        </p>
+                      </div>
+                    </div>
+
+                    <Progress value={progress} indicatorClassName={tone.bar} />
+
+                    <div className="grid grid-cols-3 gap-2 text-center">
+                      <div className="rounded-lg bg-muted/60 p-2">
+                        <p className="text-[11px] text-muted-foreground">Alcanzado</p>
+                        <p className="truncate text-sm font-semibold">{formatCurrency(achieved)}</p>
+                      </div>
+                      <div className="rounded-lg bg-muted/60 p-2">
+                        <p className="text-[11px] text-muted-foreground">Objetivo</p>
+                        <p className="truncate text-sm font-semibold">{formatCurrency(goal.target_amount)}</p>
+                      </div>
+                      <div className="rounded-lg bg-muted/60 p-2">
+                        <p className="text-[11px] text-muted-foreground">Falta</p>
+                        <p className={`truncate text-sm font-semibold ${remaining === 0 ? "text-success" : ""}`}>
+                          {formatCurrency(remaining)}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="shrink-0 text-right">
+                    <p className={`text-4xl font-bold leading-none tabular-nums sm:text-5xl ${tone.text}`}>
+                      {Math.round(progress)}
+                      <span className="text-xl sm:text-2xl">%</span>
+                    </p>
+                    <Badge variant={tone.badge} className="mt-2">{tone.label}</Badge>
+                  </div>
                 </div>
-                <Badge variant={progress >= 100 ? "success" : "muted"}>{formatPercent(progress / 100)}</Badge>
-              </div>
-              <Progress value={progress} indicatorClassName={progress >= 100 ? "bg-success" : undefined} />
-              <p className="text-sm text-muted-foreground">{formatCurrency(achieved)} alcanzado</p>
-            </CardContent>
-          </Card>
-        ))}
+              </CardContent>
+            </Card>
+          );
+        })}
       </div>
+
     </div>
   );
 }
