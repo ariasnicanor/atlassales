@@ -43,6 +43,14 @@ function GoalsInner() {
 
   return (
     <div className="space-y-6">
+      {!seeTeam && rows.length === 0 && (
+        <Card>
+          <CardContent className="p-6 text-sm text-muted-foreground">
+            Todavía no tenés un objetivo mensual asignado. Pedile a tu supervisor que cargue uno.
+          </CardContent>
+        </Card>
+      )}
+
       {seeTeam && teamGoal && (
         <Card className="border-primary/30">
           <CardHeader><CardTitle className="flex items-center gap-2"><Target className="size-5 text-primary" /> Objetivo del equipo</CardTitle></CardHeader>
