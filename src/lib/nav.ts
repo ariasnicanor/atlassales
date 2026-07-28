@@ -21,7 +21,8 @@ import {
   Plus,
   type LucideIcon,
 } from "lucide-react";
-import type { PlanTier, UserRole } from "@/types";
+import type { PlanTier, User, UserRole } from "@/types";
+import { hasFeature } from "@/lib/features";
 
 export interface NavItem {
   label: string;
@@ -31,6 +32,8 @@ export interface NavItem {
   tier: PlanTier;
   /** Si se define, solo estos roles ven el item. Si no, todos. */
   roles?: UserRole[];
+  /** Feature toggle opcional (Admin puede des/habilitar por usuario). */
+  feature?: string;
 }
 
 /** Barra inferior fija (mobile) — igual para todos los roles. */
