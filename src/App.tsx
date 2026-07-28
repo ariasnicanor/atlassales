@@ -20,6 +20,7 @@ import ClientDetail from "@/pages/clients/ClientDetail";
 import Stock from "@/pages/stock/Stock";
 import ProductDetail from "@/pages/stock/ProductDetail";
 import Tasks from "@/pages/Tasks";
+import CalendarPage from "@/pages/Calendar";
 import Users from "@/pages/Users";
 import Reports from "@/pages/Reports";
 import Settings from "@/pages/Settings";
