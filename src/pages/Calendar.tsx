@@ -22,6 +22,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { LEAD_STATUS_LABEL, TASK_STATUS_LABEL } from "@/lib/labels";
 import { EmptyState } from "@/components/commercial/EmptyState";
 import { useData } from "@/data/store";
 import { useScopedData } from "@/hooks/useScopedData";
@@ -36,12 +38,25 @@ interface CalEvent {
   id: string;
   date: Date;
   time?: string;
+  /** Nombre y apellido del lead/contacto — dato principal del evento. */
+  leadName?: string;
+  /** Título original de la actividad (usado como fallback). */
   title: string;
   kind: "task" | "followup" | "interaction" | "google";
   href?: string;
-  meta?: string;
+  /** Nota, mensaje o descripción — información secundaria. */
+  note?: string;
   ownerName?: string;
   color: string;
+  leadId?: string | null;
+  leadPhone?: string | null;
+  leadProduct?: string | null;
+  statusLabel?: string;
+}
+
+/** Etiqueta principal del evento: nombre del lead si existe. */
+function primaryLabel(ev: CalEvent) {
+  return ev.leadName ?? ev.title;
 }
 
 const KIND_COLOR: Record<CalEvent["kind"], string> = {
@@ -84,10 +99,17 @@ export default function CalendarPage() {
       const d = parseISO(iso);
       if (isNaN(d.getTime())) continue;
       const kind: CalEvent["kind"] = t.lead_id ? "followup" : "task";
+      const tLead = t.lead_id ? leadById.get(t.lead_id) : undefined;
       list.push({
         id: `task-${t.id}`,
         date: d,
         time: t.due_time ?? undefined,
+        leadName: tLead?.name,
+        leadId: t.lead_id ?? null,
+        leadPhone: tLead?.phone ?? null,
+        leadProduct: tLead?.product_interest ?? null,
+        statusLabel: TASK_STATUS_LABEL[t.status],
+        note: t.description ?? t.title,
         title: t.title,
         kind,
         href: t.lead_id ? `/leads/${t.lead_id}` : `/tasks`,
@@ -105,6 +127,12 @@ export default function CalendarPage() {
         id: `int-${i.id}`,
         date: d,
         time: format(d, "HH:mm"),
+        leadName: lead?.name,
+        leadId: i.lead_id,
+        leadPhone: lead?.phone ?? null,
+        leadProduct: lead?.product_interest ?? null,
+        statusLabel: lead ? LEAD_STATUS_LABEL[lead.status] : undefined,
+        note: i.note,
         title: i.note.length > 60 ? `${i.note.slice(0, 60)}…` : i.note,
         kind: "interaction",
         href: `/leads/${i.lead_id}`,
@@ -131,6 +159,11 @@ export default function CalendarPage() {
             id: `gcal-${uid}-${gKey}`,
             date: d,
             time: format(d, "HH:mm"),
+            leadName: ev.lead_id ? leadById.get(ev.lead_id)?.name : undefined,
+            leadId: ev.lead_id ?? null,
+            leadPhone: ev.lead_id ? leadById.get(ev.lead_id)?.phone ?? null : null,
+            leadProduct: ev.lead_id ? leadById.get(ev.lead_id)?.product_interest ?? null : null,
+            note: ev.description ?? undefined,
             title: ev.title,
             kind: "google",
             href: ev.lead_id ? `/leads/${ev.lead_id}` : undefined,
