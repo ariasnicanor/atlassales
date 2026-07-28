@@ -11,6 +11,12 @@ export type UserRole = "admin" | "supervisor" | "vendedor";
 export type LeadStatus =
   | "nuevo"
   | "contactado"
+  | "en_negociacion"
+  | "proximo_a_vender"
+  | "vendido"
+  | "sin_gestion"
+  | "cerrado"
+  // Valores legacy tolerados para datos preexistentes.
   | "en_seguimiento"
   | "cotizado"
   | "negociacion"
