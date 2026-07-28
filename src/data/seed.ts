@@ -592,6 +592,7 @@ export function buildSeedState(): DataState {
     automationRules: demoAutomationRules,
     aiScores: demoAiScores,
     auditLog: [],
+    remarketingRequests: [],
     leadDistribution: {
       mode: "round_robin",
       rr_pointer: 0,
