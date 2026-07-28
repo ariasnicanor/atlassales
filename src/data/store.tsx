@@ -227,8 +227,6 @@ export function DataProvider({ children }: { children: ReactNode }) {
         let rrAdvance: number | null = null;
         let assignReason: string | null = null;
         if (!assignedId) {
-          // Import from module (top-level import already declares it below).
-          const { pickAssignee } = require("@/lib/lead-distribution") as typeof import("@/lib/lead-distribution");
           const result = pickAssignee(input, state.leadDistribution, state.users);
           assignedId = result.user_id;
           assignReason = result.reason;
