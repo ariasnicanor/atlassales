@@ -28,6 +28,7 @@ import { uid } from "@/lib/utils";
 import { AUTO_CLOSE_DAYS, daysWithoutManagement, CLOSED_STATUSES } from "@/lib/lead-management";
 import { pushEventToGoogle, removeEventFromGoogle, getConnection } from "@/lib/google-calendar";
 import { getStoredUtm, fireLeadConversion, clearStoredUtm } from "@/lib/tracking";
+import { pickAssignee } from "@/lib/lead-distribution";
 
 function syncTaskToGCal(task: Task) {
   if (typeof window === "undefined") return;
