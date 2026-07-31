@@ -63,9 +63,10 @@ export default function Dashboard() {
         <StatCard label="Total leads" value={m.totalLeads} icon={Eye} hint="En tu pipeline" />
       </div>
 
-      <div className="grid gap-6 lg:grid-cols-3">
+      <div className="grid min-w-0 gap-6 lg:grid-cols-3">
         {/* Leads calientes */}
-        <Card className="lg:col-span-2">
+        <Card className="min-w-0 lg:col-span-2">
+
           <CardHeader className="flex-row items-center justify-between space-y-0">
             <CardTitle className="flex items-center gap-2">
               <Thermometer className="size-5 text-destructive" /> Leads calientes
