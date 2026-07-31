@@ -20,11 +20,12 @@ export function BottomNav() {
           <NavLink key={item.path} to={item.path} className={({ isActive }) => itemClass(isActive)}>
             {({ isActive }) => (
               <>
-                <item.icon className={cn("size-5", isActive && "fill-primary/10")} />
-                <span>{item.label}</span>
+                <item.icon className={cn("size-5 shrink-0", isActive && "fill-primary/10")} />
+                <span className="w-full truncate text-center">{item.label}</span>
               </>
             )}
           </NavLink>
+
         ))}
         <MoreMenu
           trigger={
