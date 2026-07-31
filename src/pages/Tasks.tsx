@@ -147,9 +147,14 @@ export default function Tasks() {
     return (
       <div className="rounded-lg border bg-card p-3">
         <div className="flex items-start gap-2">
-          <button onClick={() => toggleTaskComplete(t.id)} className="mt-0.5" aria-label="Completar tarea">
+          <button
+            onClick={() => toggleTaskComplete(t.id)}
+            className="-m-2 flex size-10 shrink-0 items-center justify-center p-2"
+            aria-label="Completar tarea"
+          >
             {done ? <CheckCircle2 className="size-4 text-success" /> : <Circle className="size-4 text-muted-foreground hover:text-primary" />}
           </button>
+
           <button onClick={() => setEditing(t)} className={cn("flex-1 text-left text-sm font-medium", done && "text-muted-foreground line-through")}>{t.title}</button>
         </div>
         <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
