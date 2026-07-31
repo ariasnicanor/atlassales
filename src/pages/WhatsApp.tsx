@@ -397,9 +397,11 @@ export default function WhatsAppPage() {
                       size="icon"
                       disabled={!draft.trim()}
                       aria-label="Enviar"
+                      className="size-11 shrink-0"
                     >
                       <Send className="size-4" />
                     </Button>
+
                   </div>
                   {!activeLead && (
                     <p className="mt-2 text-xs text-muted-foreground">
