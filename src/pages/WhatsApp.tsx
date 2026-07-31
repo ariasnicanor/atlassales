@@ -389,8 +389,9 @@ export default function WhatsAppPage() {
                         }
                       }}
                       rows={1}
-                      placeholder={activeLead ? "Escribí un mensaje..." : "Sin lead vinculado — creá uno para registrar gestiones"}
-                      className="min-h-[40px] resize-none"
+                      placeholder={activeLead ? "Escribí un mensaje..." : "Sin lead vinculado"}
+                      className="min-h-11 resize-none"
+
                     />
                     <Button
                       onClick={sendMessage}
