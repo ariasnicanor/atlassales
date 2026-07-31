@@ -16,22 +16,23 @@ export function Topbar() {
   const { users, company, resetDemo } = useData();
 
   return (
-    <header className="sticky top-0 z-30 flex h-16 items-center gap-2 border-b bg-background/95 px-4 backdrop-blur">
+    <header className="sticky top-0 z-30 flex h-16 w-full items-center gap-2 overflow-hidden border-b bg-background/95 px-4 backdrop-blur">
       {/* Brand (solo mobile; en desktop está en el sidebar) */}
-      <div className="flex items-center gap-2 lg:hidden">
-        <div className="flex size-8 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+      <div className="flex min-w-0 items-center gap-2 lg:hidden">
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
           <Waves className="size-4" />
         </div>
         <span className="truncate text-sm font-semibold">{company.name}</span>
       </div>
 
       {DATA_MODE === "mock" && (
-        <Badge variant="warning" className="ml-1 hidden sm:inline-flex">
+        <Badge variant="warning" className="ml-1 hidden shrink-0 sm:inline-flex">
           <Database className="size-3" /> Datos demo
         </Badge>
       )}
 
-      <div className="ml-auto flex items-center gap-1 sm:gap-2">
+      <div className="ml-auto flex shrink-0 items-center gap-1 sm:gap-2">
+
         <CreateMenu
           trigger={
             <Button size="sm" className="hidden sm:inline-flex">
