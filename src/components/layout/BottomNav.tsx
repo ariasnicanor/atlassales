@@ -8,22 +8,24 @@ import { cn } from "@/lib/utils";
 export function BottomNav() {
   const itemClass = (active: boolean) =>
     cn(
-      "flex flex-1 flex-col items-center justify-center gap-0.5 py-2 text-[11px] font-medium transition-colors",
+      "flex min-h-14 min-w-0 flex-1 flex-col items-center justify-center gap-0.5 px-1 py-2 text-[11px] font-medium transition-colors",
       active ? "text-primary" : "text-muted-foreground"
     );
 
   return (
-    <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 backdrop-blur lg:hidden">
-      <div className="mx-auto flex max-w-3xl items-stretch">
+    <nav className="fixed inset-x-0 bottom-0 z-40 border-t bg-background/95 pb-[env(safe-area-inset-bottom)] backdrop-blur lg:hidden">
+      <div className="mx-auto flex w-full max-w-3xl items-stretch">
+
         {PRIMARY_NAV.map((item) => (
           <NavLink key={item.path} to={item.path} className={({ isActive }) => itemClass(isActive)}>
             {({ isActive }) => (
               <>
-                <item.icon className={cn("size-5", isActive && "fill-primary/10")} />
-                <span>{item.label}</span>
+                <item.icon className={cn("size-5 shrink-0", isActive && "fill-primary/10")} />
+                <span className="w-full truncate text-center">{item.label}</span>
               </>
             )}
           </NavLink>
+
         ))}
         <MoreMenu
           trigger={

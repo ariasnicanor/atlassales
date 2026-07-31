@@ -100,10 +100,15 @@ export default function Tasks() {
     const done = t.status === "completada";
     const overdue = !done && isOverdue(t.due_date);
     return (
-      <div className="flex items-start gap-3 py-3 first:pt-0 last:pb-0">
-        <button onClick={() => toggleTaskComplete(t.id)} className="mt-0.5" aria-label="Completar tarea">
+      <div className="flex min-w-0 items-start gap-3 py-3 first:pt-0 last:pb-0">
+        <button
+          onClick={() => toggleTaskComplete(t.id)}
+          className="-m-2 flex size-11 shrink-0 items-center justify-center p-2"
+          aria-label="Completar tarea"
+        >
           {done ? <CheckCircle2 className="size-5 text-success" /> : <Circle className="size-5 text-muted-foreground hover:text-primary" />}
         </button>
+
         <button onClick={() => setEditing(t)} className="min-w-0 flex-1 text-left">
           <p className={cn("text-sm font-medium", done && "text-muted-foreground line-through")}>{t.title}</p>
           <div className="mt-0.5 flex flex-wrap items-center gap-2 text-xs text-muted-foreground">
@@ -142,9 +147,14 @@ export default function Tasks() {
     return (
       <div className="rounded-lg border bg-card p-3">
         <div className="flex items-start gap-2">
-          <button onClick={() => toggleTaskComplete(t.id)} className="mt-0.5" aria-label="Completar tarea">
+          <button
+            onClick={() => toggleTaskComplete(t.id)}
+            className="-m-2 flex size-10 shrink-0 items-center justify-center p-2"
+            aria-label="Completar tarea"
+          >
             {done ? <CheckCircle2 className="size-4 text-success" /> : <Circle className="size-4 text-muted-foreground hover:text-primary" />}
           </button>
+
           <button onClick={() => setEditing(t)} className={cn("flex-1 text-left text-sm font-medium", done && "text-muted-foreground line-through")}>{t.title}</button>
         </div>
         <div className="mt-2 flex items-center justify-between text-xs text-muted-foreground">
