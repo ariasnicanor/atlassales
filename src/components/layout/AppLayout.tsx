@@ -21,12 +21,13 @@ export function AppLayout() {
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
         <Topbar />
-        <main className="flex-1 px-4 py-6 pb-24 sm:px-6 lg:px-8 lg:pb-6">
+        <main className="flex-1 overflow-x-hidden px-4 py-6 pb-[calc(6rem+env(safe-area-inset-bottom))] sm:px-6 lg:px-8 lg:pb-6">
           <div className="mx-auto w-full max-w-6xl animate-fade-in">
             <Outlet />
           </div>
         </main>
       </div>
+
 
       {/* Barra inferior solo en mobile/tablet */}
       <BottomNav />
