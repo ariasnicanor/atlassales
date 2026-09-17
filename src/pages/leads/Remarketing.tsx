@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { Link } from "react-router-dom";
-import { Repeat2, Search, UserPlus } from "lucide-react";
+import { Eye, Repeat2, Search, UserPlus, MessageCircle } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -274,9 +274,23 @@ export default function Remarketing() {
                       </Select>
                     </div>
                   )}
-                  <Button asChild size="sm" variant="outline" className="w-full">
-                    <Link to={`/leads/${lead.id}`}>Ver ficha</Link>
-                  </Button>
+                  <div className="flex gap-2 pt-1">
+                    <Button asChild size="sm" variant="success" className="flex-1">
+                      <a
+                        href={whatsappLink(lead.phone, `Hola ${lead.name}!`)}
+                        target="_blank"
+                        rel="noreferrer"
+                        aria-label={`WhatsApp ${lead.name}`}
+                      >
+                        <MessageCircle className="size-4" /> WhatsApp
+                      </a>
+                    </Button>
+                    <Button asChild size="sm" variant="outline" aria-label={`Ver ficha ${lead.name}`}>
+                      <Link to={`/leads/${lead.id}`}>
+                        <Eye className="size-4" /> Ficha
+                      </Link>
+                    </Button>
+                  </div>
                 </CardContent>
               </Card>
             );
