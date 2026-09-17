@@ -16,13 +16,18 @@ import {
   startOfWeek,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Flame, CheckSquare, CalendarClock, Link2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flame, CheckSquare, CalendarClock, Link2, Plus } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Field } from "@/components/forms/Field";
+import { useToast } from "@/components/ui/toast";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { LEAD_STATUS_LABEL, TASK_STATUS_LABEL } from "@/lib/labels";
 import { EmptyState } from "@/components/commercial/EmptyState";
 import { useData } from "@/data/store";
@@ -80,6 +85,7 @@ export default function CalendarPage() {
   const [view, setView] = useState<ViewMode>("week");
   const [selected, setSelected] = useState<CalEvent | null>(null);
   const [cursor, setCursor] = useState(() => startOfDay(new Date()));
+  const [meetingDate, setMeetingDate] = useState<Date | null>(null);
   const { users, leads } = useData();
   const { tasks, interactions, leads: scopedLeads } = useScopedData();
   const { currentUser } = useSession();
@@ -225,6 +231,11 @@ export default function CalendarPage() {
       <PageHeader
         title="Calendario"
         description="Gestiones, tareas y seguimientos de leads"
+        actions={
+          <Button size="sm" onClick={() => setMeetingDate(cursor)}>
+            <Plus className="h-4 w-4" /> Agendar reunión
+          </Button>
+        }
       />
 
       <Card>
@@ -261,13 +272,116 @@ export default function CalendarPage() {
           </div>
 
           {view === "day" && <DayView date={cursor} events={events} onSelect={setSelected} />}
-          {view === "week" && <WeekView anchor={cursor} events={events} onSelect={setSelected} />}
-          {view === "month" && <MonthView anchor={cursor} events={events} onPickDay={(d) => { setCursor(d); setView("day"); }} />}
+          {view === "week" && <WeekView anchor={cursor} events={events} onSelect={setSelected} onSchedule={setMeetingDate} />}
+          {view === "month" && <MonthView anchor={cursor} events={events} onPickDay={(d) => setMeetingDate(d)} />}
         </CardContent>
       </Card>
 
       <EventDetailDialog ev={selected} onClose={() => setSelected(null)} />
+      <MeetingDialog date={meetingDate} onClose={() => setMeetingDate(null)} leads={scopedLeads} />
     </div>
+  );
+}
+
+function MeetingDialog({
+  date,
+  onClose,
+  leads,
+}: {
+  date: Date | null;
+  onClose: () => void;
+  leads: { id: string; name: string; assigned_user_id?: string | null }[];
+}) {
+  const { createTask, addInteraction } = useData();
+  const { currentUser } = useSession();
+  const { toast } = useToast();
+  const [leadId, setLeadId] = useState("");
+  const [time, setTime] = useState("10:00");
+  const [objective, setObjective] = useState("");
+  const [note, setNote] = useState("");
+
+  const reset = () => {
+    setLeadId("");
+    setTime("10:00");
+    setObjective("");
+    setNote("");
+  };
+
+  const submit = () => {
+    if (!date) return;
+    if (!leadId) {
+      toast("Elegí el contacto para la reunión", "warning");
+      return;
+    }
+    const lead = leads.find((l) => l.id === leadId);
+    const title = objective.trim() || `Reunión con ${lead?.name ?? "contacto"}`;
+    const due_date = format(date, "yyyy-MM-dd");
+    createTask({
+      lead_id: leadId,
+      assigned_user_id: lead?.assigned_user_id ?? currentUser?.id ?? null,
+      title,
+      description: note.trim() || null,
+      due_date,
+      due_time: time || null,
+      priority: "alta",
+      status: "pendiente",
+    });
+    addInteraction({
+      lead_id: leadId,
+      user_id: currentUser?.id ?? "user_v1",
+      type: "nota",
+      note: `Reunión agendada: ${title} — ${due_date}${time ? ` ${time}` : ""}`,
+    });
+    toast("Reunión agendada en el calendario");
+    reset();
+    onClose();
+  };
+
+  return (
+    <Dialog open={Boolean(date)} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Agendar reunión</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground capitalize">
+            {date ? format(date, "EEEE d 'de' MMMM yyyy", { locale: es }) : ""}
+          </p>
+          <Field label="Contacto" htmlFor="meeting-lead" required>
+            <Select id="meeting-lead" value={leadId} onChange={(e) => setLeadId(e.target.value)}>
+              <option value="">Seleccioná un contacto…</option>
+              {leads.map((l) => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Horario" htmlFor="meeting-time">
+            <Input id="meeting-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          </Field>
+          <Field label="Objetivo de la reunión" htmlFor="meeting-objective">
+            <Input
+              id="meeting-objective"
+              value={objective}
+              onChange={(e) => setObjective(e.target.value)}
+              placeholder="Ej: presentar propuesta y cerrar condiciones"
+            />
+          </Field>
+          <Field label="Nota" htmlFor="meeting-note">
+            <Textarea
+              id="meeting-note"
+              rows={3}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Detalles, lugar o link de la reunión"
+            />
+          </Field>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { reset(); onClose(); }}>Cancelar</Button>
+          <Button onClick={submit}>Agendar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
@@ -391,7 +505,7 @@ function EventRow({ ev, onSelect }: { ev: CalEvent; onSelect: (ev: CalEvent) => 
   );
 }
 
-function WeekView({ anchor, events, onSelect }: { anchor: Date; events: CalEvent[]; onSelect: (ev: CalEvent) => void }) {
+function WeekView({ anchor, events, onSelect, onSchedule }: { anchor: Date; events: CalEvent[]; onSelect: (ev: CalEvent) => void; onSchedule: (d: Date) => void }) {
   const start = startOfWeek(anchor, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start, end: endOfWeek(anchor, { weekStartsOn: 1 }) });
   return (
@@ -401,8 +515,16 @@ function WeekView({ anchor, events, onSelect }: { anchor: Date; events: CalEvent
         const today = isSameDay(d, new Date());
         return (
           <div key={d.toISOString()} className={cn("rounded-md border p-2 min-h-[120px]", today && "border-primary bg-primary/5")}>
-            <div className="text-xs font-semibold mb-1 capitalize">
-              {format(d, "EEE d", { locale: es })}
+            <div className="mb-1 flex items-center justify-between gap-1">
+              <span className="text-xs font-semibold capitalize">{format(d, "EEE d", { locale: es })}</span>
+              <button
+                type="button"
+                onClick={() => onSchedule(d)}
+                aria-label={`Agendar reunión el ${format(d, "d MMM", { locale: es })}`}
+                className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
             </div>
             <div className="space-y-1">
               {list.slice(0, 6).map((ev) => (
