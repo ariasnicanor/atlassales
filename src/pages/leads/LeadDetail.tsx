@@ -54,6 +54,9 @@ export default function LeadDetail() {
     deleteLead,
     remarketingRequests,
     requestRemarketingLead,
+    saleConfirmations,
+    requestSaleConfirmation,
+    resolveSaleConfirmation,
   } = useData();
   const { currentUser } = useSession();
   const { hasModule } = usePlan();
@@ -68,12 +71,19 @@ export default function LeadDetail() {
   const [taskDate, setTaskDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [taskTime, setTaskTime] = useState("09:00");
   const [taskPriority, setTaskPriority] = useState<TaskPriority>("media");
+  const [saleProductId, setSaleProductId] = useState("");
+  const [saleNote, setSaleNote] = useState("");
 
   const canViewRemarketing = can(currentUser, "view", "remarketing");
   const canRequestRemarketing = can(currentUser, "request", "remarketing");
   const pendingRequest = remarketingRequests.find(
     (r) => r.lead_id === id && r.status === "pendiente" && r.requested_by === currentUser?.id
   );
+  // Confirmación de venta: el vendedor cierra, Supervisor/Admin confirma.
+  const canConfirmSale = can(currentUser, "approve", "stock");
+  const leadSales = saleConfirmations.filter((r) => r.lead_id === id);
+  const pendingSale = leadSales.find((r) => r.status === "pendiente");
+  const lastSale = leadSales[0];
 
   if (!lead) {
     return (
@@ -353,6 +363,105 @@ export default function LeadDetail() {
                 <p className="flex items-center gap-1.5 text-xs text-muted-foreground">
                   <CalendarClock className="size-3.5" /> {fmtDate(lead.next_contact_at)}
                 </p>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Cierre de venta con confirmación de Supervisor / Admin */}
+          <Card>
+            <CardHeader><CardTitle className="text-base">Cierre de venta</CardTitle></CardHeader>
+            <CardContent className="space-y-3">
+              {pendingSale ? (
+                <>
+                  <div className="rounded-lg border border-warning/40 bg-warning/10 p-3 text-sm">
+                    <p className="font-medium">Venta pendiente de confirmación</p>
+                    <p className="text-xs text-muted-foreground">
+                      {pendingSale.product_name} · {pendingSale.requested_by_name} ·{" "}
+                      {fmtDateTime(pendingSale.created_at)}
+                    </p>
+                  </div>
+                  {canConfirmSale && (
+                    <div className="flex gap-2">
+                      <Button
+                        className="flex-1"
+                        onClick={() => {
+                          resolveSaleConfirmation(pendingSale.id, "confirmada");
+                          toast("Venta confirmada · unidad marcada como vendida");
+                        }}
+                      >
+                        Confirmar venta
+                      </Button>
+                      <Button
+                        variant="outline"
+                        onClick={() => {
+                          resolveSaleConfirmation(pendingSale.id, "rechazada");
+                          toast("Venta rechazada");
+                        }}
+                      >
+                        Rechazar
+                      </Button>
+                    </div>
+                  )}
+                </>
+              ) : lastSale?.status === "confirmada" ? (
+                <div className="rounded-lg border border-success/40 bg-success/10 p-3 text-sm">
+                  <p className="font-medium">Venta confirmada</p>
+                  <p className="text-xs text-muted-foreground">
+                    {lastSale.product_name} · confirmada por {lastSale.resolved_by_name} ·{" "}
+                    {fmtDateTime(lastSale.resolved_at)}
+                  </p>
+                </div>
+              ) : (
+                <>
+                  {lastSale?.status === "rechazada" && (
+                    <p className="text-xs text-destructive">
+                      La última solicitud fue rechazada por {lastSale.resolved_by_name}.
+                    </p>
+                  )}
+                  <Field label="Unidad vendida">
+                    <Select value={saleProductId} onChange={(e) => setSaleProductId(e.target.value)}>
+                      <option value="">Seleccionar unidad…</option>
+                      {products.map((p) => (
+                        <option key={p.id} value={p.id}>{p.name}</option>
+                      ))}
+                    </Select>
+                  </Field>
+                  <Field label="Nota para el supervisor" hint="Opcional">
+                    <Textarea
+                      rows={2}
+                      value={saleNote}
+                      onChange={(e) => setSaleNote(e.target.value)}
+                      placeholder="Condiciones, entrega, seña…"
+                    />
+                  </Field>
+                  <Button
+                    className="w-full"
+                    onClick={() => {
+                      if (!saleProductId) {
+                        toast("Elegí la unidad vendida", "warning");
+                        return;
+                      }
+                      requestSaleConfirmation({
+                        lead_id: lead.id,
+                        product_id: saleProductId,
+                        note: saleNote.trim() || null,
+                      });
+                      addInteraction({
+                        lead_id: lead.id,
+                        user_id: currentUser?.id ?? "user_v1",
+                        type: "nota",
+                        note: `Venta cerrada — pendiente de confirmación (${productName(saleProductId)})`,
+                      });
+                      setSaleNote("");
+                      toast("Venta enviada a confirmación del supervisor");
+                    }}
+                  >
+                    Marcar como vendida
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    La unidad se marca vendida recién cuando un supervisor o administrador confirma la venta.
+                  </p>
+                </>
               )}
             </CardContent>
           </Card>

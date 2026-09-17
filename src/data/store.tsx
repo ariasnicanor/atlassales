@@ -19,6 +19,7 @@ import type {
   Product,
   Quote,
   RemarketingRequest,
+  SaleConfirmation,
   FinancialSimulation,
   Task,
   User,
@@ -69,6 +70,7 @@ function loadState(): DataState {
       const parsed = JSON.parse(raw) as DataState;
       if (!parsed.auditLog) parsed.auditLog = [];
       if (!parsed.remarketingRequests) parsed.remarketingRequests = [];
+      if (!parsed.saleConfirmations) parsed.saleConfirmations = [];
       if (!parsed.leadDistribution) {
         parsed.leadDistribution = {
           mode: "round_robin",
@@ -138,6 +140,19 @@ interface DataContextValue extends DataState {
   resolveRemarketingRequest: (
     id: string,
     status: "aprobada" | "rechazada",
+    note?: string | null
+  ) => void;
+  /** El vendedor cierra la venta y la deja pendiente de confirmación. */
+  requestSaleConfirmation: (input: {
+    lead_id: string;
+    product_id: string;
+    amount?: number | null;
+    note?: string | null;
+  }) => void;
+  /** Supervisor/Admin confirma o rechaza la venta (marca la unidad vendida). */
+  resolveSaleConfirmation: (
+    id: string,
+    status: "confirmada" | "rechazada",
     note?: string | null
   ) => void;
   /** Session pasa el usuario actual acá para que el store lo use en auditoría. */
@@ -303,6 +318,90 @@ export function DataProvider({ children }: { children: ReactNode }) {
           {
             action: status === "aprobada" ? "remarketing_request_approved" : "remarketing_request_rejected",
             resource: "lead",
+            resource_id: id,
+            meta: note ?? null,
+          }
+        );
+      },
+
+      requestSaleConfirmation: ({ lead_id, product_id, amount, note }) => {
+        const actor = actorRef.current;
+        if (!actor) return;
+        const now = nowIso();
+        withAudit(
+          (s) => {
+            const lead = s.leads.find((l) => l.id === lead_id);
+            const product = s.products.find((p) => p.id === product_id);
+            if (!lead || !product) return s;
+            const already = s.saleConfirmations.some(
+              (r) => r.lead_id === lead_id && r.status === "pendiente"
+            );
+            if (already) return s;
+            const req: SaleConfirmation = {
+              id: uid("salereq"),
+              company_id: s.company.id,
+              lead_id,
+              lead_name: lead.name,
+              product_id,
+              product_name: product.name,
+              amount: amount ?? product.promo_price ?? product.list_price ?? null,
+              requested_by: actor.id,
+              requested_by_name: actor.name,
+              note: note ?? null,
+              status: "pendiente",
+              created_at: now,
+            };
+            return { ...s, saleConfirmations: [req, ...s.saleConfirmations] };
+          },
+          {
+            action: "sale_confirmation_requested",
+            resource: "sale",
+            resource_id: lead_id,
+            meta: note ?? null,
+          }
+        );
+      },
+
+      resolveSaleConfirmation: (id, status, note) => {
+        const actor = actorRef.current;
+        const now = nowIso();
+        withAudit(
+          (s) => {
+            const req = s.saleConfirmations.find((r) => r.id === id);
+            if (!req || req.status !== "pendiente") return s;
+            const saleConfirmations = s.saleConfirmations.map((r) =>
+              r.id === id
+                ? {
+                    ...r,
+                    status,
+                    resolved_by: actor?.id ?? null,
+                    resolved_by_name: actor?.name ?? "Sistema",
+                    resolution_note: note ?? null,
+                    resolved_at: now,
+                  }
+                : r
+            );
+            if (status !== "confirmada") return { ...s, saleConfirmations };
+            const products = s.products.map((p) =>
+              p.id === req.product_id
+                ? { ...p, status: "vendido" as const, availability: 0 }
+                : p
+            );
+            const leads = s.leads.map((l) =>
+              l.id === req.lead_id
+                ? {
+                    ...l,
+                    status: "vendido" as const,
+                    last_management_at: now,
+                    updated_at: now,
+                  }
+                : l
+            );
+            return { ...s, saleConfirmations, products, leads };
+          },
+          {
+            action: status === "confirmada" ? "sale_confirmed" : "sale_rejected",
+            resource: "sale",
             resource_id: id,
             meta: note ?? null,
           }

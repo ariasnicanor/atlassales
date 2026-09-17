@@ -333,6 +333,32 @@ export interface DataState {
   auditLog: AuditLogEntry[];
   leadDistribution: LeadDistributionConfig;
   remarketingRequests: RemarketingRequest[];
+  saleConfirmations: SaleConfirmation[];
+}
+
+export type SaleConfirmationStatus = "pendiente" | "confirmada" | "rechazada";
+
+/**
+ * El vendedor cierra la venta desde la ficha del contacto y queda pendiente
+ * de confirmación por Supervisor / Admin antes de marcar la unidad vendida.
+ */
+export interface SaleConfirmation {
+  id: UUID;
+  company_id: UUID;
+  lead_id: UUID;
+  lead_name: string;
+  product_id: UUID;
+  product_name: string;
+  amount: number | null;
+  requested_by: UUID;
+  requested_by_name: string;
+  note?: string | null;
+  status: SaleConfirmationStatus;
+  resolved_by?: UUID | null;
+  resolved_by_name?: string | null;
+  resolution_note?: string | null;
+  resolved_at?: ISODate | null;
+  created_at: ISODate;
 }
 
 export type RemarketingRequestStatus = "pendiente" | "aprobada" | "rechazada";
