@@ -21,15 +21,24 @@ import { ProductStatusBadge } from "@/components/commercial/StatusBadges";
 import { ProductImage } from "@/components/commercial/ProductImage";
 import { EmptyState } from "@/components/commercial/EmptyState";
 import { useData } from "@/data/store";
+import { useScopedData } from "@/hooks/useScopedData";
+import { useSession } from "@/context/session";
+import { can } from "@/lib/permissions";
 import { useToast } from "@/components/ui/toast";
 import { formatCurrency } from "@/lib/utils";
 import type { ProductStatus } from "@/types";
 
 export default function ProductDetail() {
   const { id } = useParams();
-  const { products, leads, updateProduct } = useData();
+  const { products, updateProduct, logAudit } = useData();
+  const { leads } = useScopedData();
+  const { currentUser } = useSession();
   const { toast } = useToast();
   const product = products.find((p) => p.id === id);
+
+  // Solo Supervisor / Admin gestionan el estado de la unidad y ven notas internas.
+  const canManage = can(currentUser, "edit", "stock");
+  const canRequest = !canManage && can(currentUser, "request", "stock");
 
   if (!product) {
     return (
