@@ -142,6 +142,19 @@ interface DataContextValue extends DataState {
     status: "aprobada" | "rechazada",
     note?: string | null
   ) => void;
+  /** El vendedor cierra la venta y la deja pendiente de confirmación. */
+  requestSaleConfirmation: (input: {
+    lead_id: string;
+    product_id: string;
+    amount?: number | null;
+    note?: string | null;
+  }) => void;
+  /** Supervisor/Admin confirma o rechaza la venta (marca la unidad vendida). */
+  resolveSaleConfirmation: (
+    id: string,
+    status: "confirmada" | "rechazada",
+    note?: string | null
+  ) => void;
   /** Session pasa el usuario actual acá para que el store lo use en auditoría. */
   _setActor: (user: User | null) => void;
 }
