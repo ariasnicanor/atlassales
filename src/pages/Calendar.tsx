@@ -273,13 +273,13 @@ export default function CalendarPage() {
           </div>
 
           {view === "day" && <DayView date={cursor} events={events} onSelect={setSelected} />}
-          {view === "week" && <WeekView anchor={cursor} events={events} onSelect={setSelected} onSchedule={setMeetingDate} />}
-          {view === "month" && <MonthView anchor={cursor} events={events} onPickDay={(d) => setMeetingDate(d)} />}
+          {view === "week" && <WeekView anchor={cursor} events={events} onSelect={setSelected} onSchedule={(d) => { setMeetingPickDate(false); setMeetingDate(d); }} />}
+          {view === "month" && <MonthView anchor={cursor} events={events} onPickDay={(d) => { setMeetingPickDate(false); setMeetingDate(d); }} />}
         </CardContent>
       </Card>
 
       <EventDetailDialog ev={selected} onClose={() => setSelected(null)} />
-      <MeetingDialog date={meetingDate} onClose={() => setMeetingDate(null)} leads={scopedLeads} />
+      <MeetingDialog date={meetingDate} pickDate={meetingPickDate} onClose={() => setMeetingDate(null)} leads={scopedLeads} />
     </div>
   );
 }
