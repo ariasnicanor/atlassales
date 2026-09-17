@@ -210,6 +210,44 @@ export default function Stock() {
         </Dialog>
       </div>
 
+      {canApprove && pendingSales.length > 0 && (
+        <Card className="border-warning/50">
+          <CardContent className="space-y-3 p-4">
+            <p className="text-sm font-semibold">Ventas a confirmar ({pendingSales.length})</p>
+            {pendingSales.map((r) => (
+              <div key={r.id} className="flex flex-wrap items-center gap-2 rounded-lg border p-3 text-sm">
+                <div className="min-w-0 flex-1">
+                  <p className="font-medium">{r.product_name}</p>
+                  <p className="text-xs text-muted-foreground">
+                    {r.lead_name} · cerrada por {r.requested_by_name}
+                    {r.note ? ` · ${r.note}` : ""}
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  onClick={() => {
+                    resolveSaleConfirmation(r.id, "confirmada");
+                    toast("Venta confirmada · unidad marcada como vendida");
+                  }}
+                >
+                  Confirmar
+                </Button>
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    resolveSaleConfirmation(r.id, "rechazada");
+                    toast("Venta rechazada");
+                  }}
+                >
+                  Rechazar
+                </Button>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      )}
+
       {activeCount > 0 && (
         <div className="flex flex-wrap items-center gap-2">
           {condition !== "todas" && <Chip label={conditionLabel} onClear={() => setCondition("todas")} />}
