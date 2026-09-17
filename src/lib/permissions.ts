@@ -89,8 +89,9 @@ export const ROLE_MATRIX: Record<UserRole, Partial<Record<Resource, Action[]>>> 
     tasks: ["view", "create", "edit", "delete", "assign"],
     quotes: ["view", "create", "edit", "approve"],
     financing: ["view", "create"],
-    products: ["view"],
-    stock: ["view"],
+    // Stock: puede cambiar el estado de gestión de la unidad y ver leads interesados.
+    products: ["view", "edit", "approve"],
+    stock: ["view", "edit", "approve"],
     prices: ["view"],
     goals: ["view", "edit"],
     commissions: ["view", "export"],
