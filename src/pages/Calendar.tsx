@@ -356,9 +356,15 @@ function MeetingDialog({
           <DialogTitle>Agendar reunión</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground capitalize">
-            {date ? format(date, "EEEE d 'de' MMMM yyyy", { locale: es }) : ""}
-          </p>
+          {pickDate ? (
+            <Field label="Día" htmlFor="meeting-day" required>
+              <Input id="meeting-day" type="date" value={day} onChange={(e) => setDay(e.target.value)} />
+            </Field>
+          ) : (
+            <p className="text-sm text-muted-foreground capitalize">
+              {date ? format(date, "EEEE d 'de' MMMM yyyy", { locale: es }) : ""}
+            </p>
+          )}
           <Field label="Contacto" htmlFor="meeting-lead" required>
             <Select id="meeting-lead" value={leadId} onChange={(e) => setLeadId(e.target.value)}>
               <option value="">Seleccioná un contacto…</option>
