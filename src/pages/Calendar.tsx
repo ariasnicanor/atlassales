@@ -272,13 +272,116 @@ export default function CalendarPage() {
           </div>
 
           {view === "day" && <DayView date={cursor} events={events} onSelect={setSelected} />}
-          {view === "week" && <WeekView anchor={cursor} events={events} onSelect={setSelected} />}
-          {view === "month" && <MonthView anchor={cursor} events={events} onPickDay={(d) => { setCursor(d); setView("day"); }} />}
+          {view === "week" && <WeekView anchor={cursor} events={events} onSelect={setSelected} onSchedule={setMeetingDate} />}
+          {view === "month" && <MonthView anchor={cursor} events={events} onPickDay={(d) => setMeetingDate(d)} />}
         </CardContent>
       </Card>
 
       <EventDetailDialog ev={selected} onClose={() => setSelected(null)} />
+      <MeetingDialog date={meetingDate} onClose={() => setMeetingDate(null)} leads={scopedLeads} />
     </div>
+  );
+}
+
+function MeetingDialog({
+  date,
+  onClose,
+  leads,
+}: {
+  date: Date | null;
+  onClose: () => void;
+  leads: { id: string; name: string; assigned_user_id?: string | null }[];
+}) {
+  const { createTask, addInteraction } = useData();
+  const { currentUser } = useSession();
+  const { toast } = useToast();
+  const [leadId, setLeadId] = useState("");
+  const [time, setTime] = useState("10:00");
+  const [objective, setObjective] = useState("");
+  const [note, setNote] = useState("");
+
+  const reset = () => {
+    setLeadId("");
+    setTime("10:00");
+    setObjective("");
+    setNote("");
+  };
+
+  const submit = () => {
+    if (!date) return;
+    if (!leadId) {
+      toast("Elegí el contacto para la reunión", "warning");
+      return;
+    }
+    const lead = leads.find((l) => l.id === leadId);
+    const title = objective.trim() || `Reunión con ${lead?.name ?? "contacto"}`;
+    const due_date = format(date, "yyyy-MM-dd");
+    createTask({
+      lead_id: leadId,
+      assigned_user_id: lead?.assigned_user_id ?? currentUser?.id ?? null,
+      title,
+      description: note.trim() || null,
+      due_date,
+      due_time: time || null,
+      priority: "alta",
+      status: "pendiente",
+    });
+    addInteraction({
+      lead_id: leadId,
+      user_id: currentUser?.id ?? "user_v1",
+      type: "nota",
+      note: `Reunión agendada: ${title} — ${due_date}${time ? ` ${time}` : ""}`,
+    });
+    toast("Reunión agendada en el calendario");
+    reset();
+    onClose();
+  };
+
+  return (
+    <Dialog open={Boolean(date)} onOpenChange={(o) => { if (!o) { reset(); onClose(); } }}>
+      <DialogContent className="max-w-md">
+        <DialogHeader>
+          <DialogTitle>Agendar reunión</DialogTitle>
+        </DialogHeader>
+        <div className="space-y-3">
+          <p className="text-sm text-muted-foreground capitalize">
+            {date ? format(date, "EEEE d 'de' MMMM yyyy", { locale: es }) : ""}
+          </p>
+          <Field label="Contacto" htmlFor="meeting-lead" required>
+            <Select id="meeting-lead" value={leadId} onChange={(e) => setLeadId(e.target.value)}>
+              <option value="">Seleccioná un contacto…</option>
+              {leads.map((l) => (
+                <option key={l.id} value={l.id}>{l.name}</option>
+              ))}
+            </Select>
+          </Field>
+          <Field label="Horario" htmlFor="meeting-time">
+            <Input id="meeting-time" type="time" value={time} onChange={(e) => setTime(e.target.value)} />
+          </Field>
+          <Field label="Objetivo de la reunión" htmlFor="meeting-objective">
+            <Input
+              id="meeting-objective"
+              value={objective}
+              onChange={(e) => setObjective(e.target.value)}
+              placeholder="Ej: presentar propuesta y cerrar condiciones"
+            />
+          </Field>
+          <Field label="Nota" htmlFor="meeting-note">
+            <Textarea
+              id="meeting-note"
+              rows={3}
+              value={note}
+              onChange={(e) => setNote(e.target.value)}
+              placeholder="Detalles, lugar o link de la reunión"
+            />
+          </Field>
+        </div>
+        <DialogFooter>
+          <Button variant="outline" onClick={() => { reset(); onClose(); }}>Cancelar</Button>
+          <Button onClick={submit}>Agendar</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
 
