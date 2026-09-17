@@ -19,6 +19,7 @@ import type {
   Product,
   Quote,
   RemarketingRequest,
+  ReservationRequest,
   SaleConfirmation,
   FinancialSimulation,
   Task,
