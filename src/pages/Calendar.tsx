@@ -86,6 +86,7 @@ export default function CalendarPage() {
   const [selected, setSelected] = useState<CalEvent | null>(null);
   const [cursor, setCursor] = useState(() => startOfDay(new Date()));
   const [meetingDate, setMeetingDate] = useState<Date | null>(null);
+  const [meetingPickDate, setMeetingPickDate] = useState(false);
   const { users, leads } = useData();
   const { tasks, interactions, leads: scopedLeads } = useScopedData();
   const { currentUser } = useSession();
@@ -232,7 +233,7 @@ export default function CalendarPage() {
         title="Calendario"
         description="Gestiones, tareas y seguimientos de leads"
         actions={
-          <Button size="sm" onClick={() => setMeetingDate(cursor)}>
+          <Button size="sm" onClick={() => { setMeetingPickDate(true); setMeetingDate(cursor); }}>
             <Plus className="h-4 w-4" /> Agendar reunión
           </Button>
         }
