@@ -54,6 +54,9 @@ export default function LeadDetail() {
     deleteLead,
     remarketingRequests,
     requestRemarketingLead,
+    saleConfirmations,
+    requestSaleConfirmation,
+    resolveSaleConfirmation,
   } = useData();
   const { currentUser } = useSession();
   const { hasModule } = usePlan();
