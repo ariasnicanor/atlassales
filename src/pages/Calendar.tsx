@@ -515,8 +515,16 @@ function WeekView({ anchor, events, onSelect, onSchedule }: { anchor: Date; even
         const today = isSameDay(d, new Date());
         return (
           <div key={d.toISOString()} className={cn("rounded-md border p-2 min-h-[120px]", today && "border-primary bg-primary/5")}>
-            <div className="text-xs font-semibold mb-1 capitalize">
-              {format(d, "EEE d", { locale: es })}
+            <div className="mb-1 flex items-center justify-between gap-1">
+              <span className="text-xs font-semibold capitalize">{format(d, "EEE d", { locale: es })}</span>
+              <button
+                type="button"
+                onClick={() => onSchedule(d)}
+                aria-label={`Agendar reunión el ${format(d, "d MMM", { locale: es })}`}
+                className="flex size-6 items-center justify-center rounded text-muted-foreground hover:bg-muted hover:text-foreground"
+              >
+                <Plus className="h-3.5 w-3.5" />
+              </button>
             </div>
             <div className="space-y-1">
               {list.slice(0, 6).map((ev) => (
