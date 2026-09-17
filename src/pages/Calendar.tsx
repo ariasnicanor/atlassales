@@ -286,10 +286,12 @@ export default function CalendarPage() {
 
 function MeetingDialog({
   date,
+  pickDate,
   onClose,
   leads,
 }: {
   date: Date | null;
+  pickDate?: boolean;
   onClose: () => void;
   leads: { id: string; name: string; assigned_user_id?: string | null }[];
 }) {
@@ -300,6 +302,11 @@ function MeetingDialog({
   const [time, setTime] = useState("10:00");
   const [objective, setObjective] = useState("");
   const [note, setNote] = useState("");
+  const [day, setDay] = useState("");
+
+  useEffect(() => {
+    if (date) setDay(format(date, "yyyy-MM-dd"));
+  }, [date]);
 
   const reset = () => {
     setLeadId("");
@@ -314,9 +321,13 @@ function MeetingDialog({
       toast("Elegí el contacto para la reunión", "warning");
       return;
     }
+    const due_date = pickDate ? day : format(date, "yyyy-MM-dd");
+    if (!due_date) {
+      toast("Elegí el día de la reunión", "warning");
+      return;
+    }
     const lead = leads.find((l) => l.id === leadId);
     const title = objective.trim() || `Reunión con ${lead?.name ?? "contacto"}`;
-    const due_date = format(date, "yyyy-MM-dd");
     createTask({
       lead_id: leadId,
       assigned_user_id: lead?.assigned_user_id ?? currentUser?.id ?? null,
