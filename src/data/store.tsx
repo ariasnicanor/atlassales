@@ -19,6 +19,7 @@ import type {
   Product,
   Quote,
   RemarketingRequest,
+  SaleConfirmation,
   FinancialSimulation,
   Task,
   User,
@@ -69,6 +70,7 @@ function loadState(): DataState {
       const parsed = JSON.parse(raw) as DataState;
       if (!parsed.auditLog) parsed.auditLog = [];
       if (!parsed.remarketingRequests) parsed.remarketingRequests = [];
+      if (!parsed.saleConfirmations) parsed.saleConfirmations = [];
       if (!parsed.leadDistribution) {
         parsed.leadDistribution = {
           mode: "round_robin",
