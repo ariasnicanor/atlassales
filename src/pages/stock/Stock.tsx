@@ -34,7 +34,7 @@ const FUELS = ["Nafta", "Diésel", "Híbrido", "Eléctrico", "GNC"];
 const TRANSMISSIONS = ["Manual", "Automática", "CVT"];
 
 export default function Stock() {
-  const { products, createProduct } = useData();
+  const { products, createProduct, saleConfirmations, resolveSaleConfirmation } = useData();
   const { toast } = useToast();
   const [search, setSearch] = useState("");
   const [brand, setBrand] = useState("todas");
@@ -64,6 +64,8 @@ export default function Stock() {
   const watchCondition = watch("condition");
   const { currentUser } = useSession();
   const canCreate = can(currentUser, "create", "stock");
+  const canApprove = can(currentUser, "approve", "stock");
+  const pendingSales = saleConfirmations.filter((r) => r.status === "pendiente");
 
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
