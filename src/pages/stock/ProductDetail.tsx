@@ -133,34 +133,69 @@ export default function ProductDetail() {
 
         {/* Panel lateral: gestión interna + leads interesados */}
         <div className="space-y-6">
-          <Card>
-            <CardHeader><CardTitle>Gestión</CardTitle></CardHeader>
-            <CardContent className="space-y-4">
-              <Field label="Estado">
-                <Select
-                  value={product.status}
-                  onChange={(e) => {
-                    updateProduct(product.id, { status: e.target.value as ProductStatus });
-                    toast("Estado actualizado");
+          {canManage && (
+            <Card>
+              <CardHeader><CardTitle>Gestión</CardTitle></CardHeader>
+              <CardContent className="space-y-4">
+                <Field label="Estado">
+                  <Select
+                    value={product.status}
+                    onChange={(e) => {
+                      updateProduct(product.id, { status: e.target.value as ProductStatus });
+                      toast("Estado actualizado");
+                    }}
+                  >
+                    <option value="disponible">Disponible</option>
+                    <option value="reservado">Reservado</option>
+                    <option value="vendido">Vendido</option>
+                    <option value="sin_stock">Sin stock</option>
+                  </Select>
+                </Field>
+                {product.internal_notes && (
+                  <div className="rounded-lg bg-muted/60 p-3">
+                    <p className="mb-1 flex items-center gap-1.5 text-xs font-medium"><Tag className="size-3.5" /> Notas internas</p>
+                    <p className="text-sm text-muted-foreground">{product.internal_notes}</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
+          {canRequest && (
+            <Card>
+              <CardHeader><CardTitle>Disponibilidad</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <p className="text-sm text-muted-foreground">
+                  El estado de la unidad lo gestiona tu supervisor. Podés solicitar la reserva
+                  para tu cliente y te avisarán cuando la aprueben.
+                </p>
+                <Button
+                  className="w-full"
+                  variant="outline"
+                  disabled={product.status !== "disponible"}
+                  onClick={() => {
+                    logAudit({
+                      action: "request",
+                      resource: "stock",
+                      resource_id: product.id,
+                      meta: `Solicitud de reserva · ${product.name}`,
+                    });
+                    toast("Solicitud de reserva enviada al supervisor");
                   }}
                 >
-                  <option value="disponible">Disponible</option>
-                  <option value="reservado">Reservado</option>
-                  <option value="vendido">Vendido</option>
-                  <option value="sin_stock">Sin stock</option>
-                </Select>
-              </Field>
-              {product.internal_notes && (
-                <div className="rounded-lg bg-muted/60 p-3">
-                  <p className="mb-1 flex items-center gap-1.5 text-xs font-medium"><Tag className="size-3.5" /> Notas internas</p>
-                  <p className="text-sm text-muted-foreground">{product.internal_notes}</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                  <Lock className="size-4" />
+                  {product.status === "disponible" ? "Solicitar reserva" : "Unidad no disponible"}
+                </Button>
+              </CardContent>
+            </Card>
+          )}
 
           <Card>
-            <CardHeader><CardTitle>Leads interesados ({interested.length})</CardTitle></CardHeader>
+            <CardHeader>
+              <CardTitle>
+                {canManage ? `Leads interesados (${interested.length})` : `Mis contactos interesados (${interested.length})`}
+              </CardTitle>
+            </CardHeader>
             <CardContent>
               {interested.length === 0 ? (
                 <EmptyState icon={Package} title="Sin leads interesados" description="Asociá este producto a un lead desde su ficha." />
