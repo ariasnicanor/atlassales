@@ -71,8 +71,10 @@ export const ROLE_MATRIX: Record<UserRole, Partial<Record<Resource, Action[]>>> 
     tasks: ["view", "create", "edit", "delete"],
     quotes: ["view", "create", "edit"],
     financing: ["view", "create"],
+    // Stock: solo lectura del catálogo. Puede SOLICITAR la reserva de una unidad,
+    // pero no cambiar su estado de gestión ni ver leads de otros vendedores.
     products: ["view"],
-    stock: ["view"],
+    stock: ["view", "request"],
     prices: ["view"],
     goals: ["view"],
     commissions: ["view"],
