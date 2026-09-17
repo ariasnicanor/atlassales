@@ -31,7 +31,7 @@ import type { ProductStatus } from "@/types";
 
 export default function ProductDetail() {
   const { id } = useParams();
-  const { products, updateProduct, logAudit } = useData();
+  const { products, updateProduct, reservationRequests, requestReservation, resolveReservationRequest } = useData();
   const { leads } = useScopedData();
   const { currentUser } = useSession();
   const { toast } = useToast();
@@ -40,6 +40,10 @@ export default function ProductDetail() {
   // Solo Supervisor / Admin gestionan el estado de la unidad y ven notas internas.
   const canManage = can(currentUser, "edit", "stock");
   const canRequest = !canManage && can(currentUser, "request", "stock");
+  const productRequests = reservationRequests.filter((r) => r.product_id === id);
+  const pendingReservations = productRequests.filter((r) => r.status === "pendiente");
+  const resolvedReservations = productRequests.filter((r) => r.status !== "pendiente");
+  const myPending = pendingReservations.some((r) => r.requested_by === currentUser?.id);
 
   if (!product) {
     return (
