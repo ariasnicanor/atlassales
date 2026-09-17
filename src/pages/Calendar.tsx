@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Link } from "react-router-dom";
 import {
   addDays,
@@ -86,6 +86,7 @@ export default function CalendarPage() {
   const [selected, setSelected] = useState<CalEvent | null>(null);
   const [cursor, setCursor] = useState(() => startOfDay(new Date()));
   const [meetingDate, setMeetingDate] = useState<Date | null>(null);
+  const [meetingPickDate, setMeetingPickDate] = useState(false);
   const { users, leads } = useData();
   const { tasks, interactions, leads: scopedLeads } = useScopedData();
   const { currentUser } = useSession();
@@ -232,7 +233,7 @@ export default function CalendarPage() {
         title="Calendario"
         description="Gestiones, tareas y seguimientos de leads"
         actions={
-          <Button size="sm" onClick={() => setMeetingDate(cursor)}>
+          <Button size="sm" onClick={() => { setMeetingPickDate(true); setMeetingDate(cursor); }}>
             <Plus className="h-4 w-4" /> Agendar reunión
           </Button>
         }
@@ -272,23 +273,25 @@ export default function CalendarPage() {
           </div>
 
           {view === "day" && <DayView date={cursor} events={events} onSelect={setSelected} />}
-          {view === "week" && <WeekView anchor={cursor} events={events} onSelect={setSelected} onSchedule={setMeetingDate} />}
-          {view === "month" && <MonthView anchor={cursor} events={events} onPickDay={(d) => setMeetingDate(d)} />}
+          {view === "week" && <WeekView anchor={cursor} events={events} onSelect={setSelected} onSchedule={(d) => { setMeetingPickDate(false); setMeetingDate(d); }} />}
+          {view === "month" && <MonthView anchor={cursor} events={events} onPickDay={(d) => { setMeetingPickDate(false); setMeetingDate(d); }} />}
         </CardContent>
       </Card>
 
       <EventDetailDialog ev={selected} onClose={() => setSelected(null)} />
-      <MeetingDialog date={meetingDate} onClose={() => setMeetingDate(null)} leads={scopedLeads} />
+      <MeetingDialog date={meetingDate} pickDate={meetingPickDate} onClose={() => setMeetingDate(null)} leads={scopedLeads} />
     </div>
   );
 }
 
 function MeetingDialog({
   date,
+  pickDate,
   onClose,
   leads,
 }: {
   date: Date | null;
+  pickDate?: boolean;
   onClose: () => void;
   leads: { id: string; name: string; assigned_user_id?: string | null }[];
 }) {
@@ -299,6 +302,11 @@ function MeetingDialog({
   const [time, setTime] = useState("10:00");
   const [objective, setObjective] = useState("");
   const [note, setNote] = useState("");
+  const [day, setDay] = useState("");
+
+  useEffect(() => {
+    if (date) setDay(format(date, "yyyy-MM-dd"));
+  }, [date]);
 
   const reset = () => {
     setLeadId("");
@@ -313,9 +321,13 @@ function MeetingDialog({
       toast("Elegí el contacto para la reunión", "warning");
       return;
     }
+    const due_date = pickDate ? day : format(date, "yyyy-MM-dd");
+    if (!due_date) {
+      toast("Elegí el día de la reunión", "warning");
+      return;
+    }
     const lead = leads.find((l) => l.id === leadId);
     const title = objective.trim() || `Reunión con ${lead?.name ?? "contacto"}`;
-    const due_date = format(date, "yyyy-MM-dd");
     createTask({
       lead_id: leadId,
       assigned_user_id: lead?.assigned_user_id ?? currentUser?.id ?? null,
@@ -344,9 +356,15 @@ function MeetingDialog({
           <DialogTitle>Agendar reunión</DialogTitle>
         </DialogHeader>
         <div className="space-y-3">
-          <p className="text-sm text-muted-foreground capitalize">
-            {date ? format(date, "EEEE d 'de' MMMM yyyy", { locale: es }) : ""}
-          </p>
+          {pickDate ? (
+            <Field label="Día" htmlFor="meeting-day" required>
+              <Input id="meeting-day" type="date" value={day} onChange={(e) => setDay(e.target.value)} />
+            </Field>
+          ) : (
+            <p className="text-sm text-muted-foreground capitalize">
+              {date ? format(date, "EEEE d 'de' MMMM yyyy", { locale: es }) : ""}
+            </p>
+          )}
           <Field label="Contacto" htmlFor="meeting-lead" required>
             <Select id="meeting-lead" value={leadId} onChange={(e) => setLeadId(e.target.value)}>
               <option value="">Seleccioná un contacto…</option>
