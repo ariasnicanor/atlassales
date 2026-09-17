@@ -231,6 +231,11 @@ export default function CalendarPage() {
       <PageHeader
         title="Calendario"
         description="Gestiones, tareas y seguimientos de leads"
+        actions={
+          <Button size="sm" onClick={() => setMeetingDate(cursor)}>
+            <Plus className="h-4 w-4" /> Agendar reunión
+          </Button>
+        }
       />
 
       <Card>
