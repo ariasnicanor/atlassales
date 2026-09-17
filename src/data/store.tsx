@@ -421,6 +421,77 @@ export function DataProvider({ children }: { children: ReactNode }) {
         );
       },
 
+      requestReservation: ({ product_id, lead_id, note }) => {
+        const actor = actorRef.current;
+        if (!actor) return;
+        const now = nowIso();
+        withAudit(
+          (s) => {
+            const product = s.products.find((p) => p.id === product_id);
+            if (!product) return s;
+            const already = s.reservationRequests.some(
+              (r) => r.product_id === product_id && r.requested_by === actor.id && r.status === "pendiente"
+            );
+            if (already) return s;
+            const lead = lead_id ? s.leads.find((l) => l.id === lead_id) : null;
+            const req: ReservationRequest = {
+              id: uid("resreq"),
+              company_id: s.company.id,
+              product_id,
+              product_name: product.name,
+              lead_id: lead?.id ?? null,
+              lead_name: lead?.name ?? null,
+              requested_by: actor.id,
+              requested_by_name: actor.name,
+              note: note ?? null,
+              status: "pendiente",
+              created_at: now,
+            };
+            return { ...s, reservationRequests: [req, ...s.reservationRequests] };
+          },
+          {
+            action: "reservation_requested",
+            resource: "stock",
+            resource_id: product_id,
+            meta: note ?? null,
+          }
+        );
+      },
+
+      resolveReservationRequest: (id, status, note) => {
+        const actor = actorRef.current;
+        const now = nowIso();
+        withAudit(
+          (s) => {
+            const req = s.reservationRequests.find((r) => r.id === id);
+            if (!req || req.status !== "pendiente") return s;
+            const reservationRequests = s.reservationRequests.map((r) =>
+              r.id === id
+                ? {
+                    ...r,
+                    status,
+                    resolved_by: actor?.id ?? null,
+                    resolved_by_name: actor?.name ?? "Sistema",
+                    resolution_note: note ?? null,
+                    resolved_at: now,
+                  }
+                : r
+            );
+            if (status !== "aprobada") return { ...s, reservationRequests };
+            const products = s.products.map((p) =>
+              p.id === req.product_id ? { ...p, status: "reservado" as const } : p
+            );
+            return { ...s, reservationRequests, products };
+          },
+          {
+            action: status === "aprobada" ? "reservation_approved" : "reservation_rejected",
+            resource: "stock",
+            resource_id: id,
+            meta: note ?? null,
+          }
+        );
+      },
+
       updateCompany: (patch) =>
         withAudit(
           (s) => ({ ...s, company: { ...s.company, ...patch } }),
