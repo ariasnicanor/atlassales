@@ -21,6 +21,7 @@ import { Avatar } from "@/components/ui/avatar";
 import { LeadStatusBadge, TemperatureBadge } from "@/components/commercial/StatusBadges";
 import { EmptyState } from "@/components/commercial/EmptyState";
 import { useMetrics } from "@/hooks/useMetrics";
+import { TeamKpis } from "@/components/commercial/TeamKpis";
 import { useSession } from "@/context/session";
 import { formatPercent } from "@/lib/utils";
 
@@ -62,6 +63,8 @@ export default function Dashboard() {
         <StatCard label="Conversión" value={formatPercent(m.conversion)} icon={TrendingUp} tone="brand" hint="Ganados / cerrados" />
         <StatCard label="Total leads" value={m.totalLeads} icon={Eye} hint="En tu pipeline" />
       </div>
+
+      <TeamKpis />
 
       <div className="grid min-w-0 gap-6 lg:grid-cols-3">
         {/* Leads calientes */}
