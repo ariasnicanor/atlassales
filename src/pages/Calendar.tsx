@@ -85,6 +85,7 @@ export default function CalendarPage() {
   const [view, setView] = useState<ViewMode>("week");
   const [selected, setSelected] = useState<CalEvent | null>(null);
   const [cursor, setCursor] = useState(() => startOfDay(new Date()));
+  const [meetingDate, setMeetingDate] = useState<Date | null>(null);
   const { users, leads } = useData();
   const { tasks, interactions, leads: scopedLeads } = useScopedData();
   const { currentUser } = useSession();
