@@ -1,6 +1,6 @@
 import { useMemo, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { Bell, AlertTriangle, Clock, CheckSquare } from "lucide-react";
+import { Bell, AlertTriangle, Clock, CheckSquare, Lock } from "lucide-react";
 import {
   Dialog,
   DialogContent,
@@ -11,6 +11,9 @@ import {
 import { Badge } from "@/components/ui/badge";
 import { EmptyState } from "@/components/commercial/EmptyState";
 import { useScopedData } from "@/hooks/useScopedData";
+import { useData } from "@/data/store";
+import { useSession } from "@/context/session";
+import { can } from "@/lib/permissions";
 import { isOverdue, isDueToday, fmtDate } from "@/lib/date";
 import { cn } from "@/lib/utils";
 
@@ -18,6 +21,9 @@ import { cn } from "@/lib/utils";
 export function NotificationsBell() {
   const navigate = useNavigate();
   const { tasks } = useScopedData();
+  const { reservationRequests } = useData();
+  const { currentUser } = useSession();
+  const canApproveStock = can(currentUser, "edit", "stock");
   const [open, setOpen] = useState(false);
 
   const { overdue, today } = useMemo(() => {
@@ -28,7 +34,11 @@ export function NotificationsBell() {
     };
   }, [tasks]);
 
-  const count = overdue.length + today.length;
+  const pendingReservations = canApproveStock
+    ? reservationRequests.filter((r) => r.status === "pendiente")
+    : [];
+
+  const count = overdue.length + today.length + pendingReservations.length;
 
   const go = (path: string) => {
     setOpen(false);
@@ -53,9 +63,28 @@ export function NotificationsBell() {
         </DialogHeader>
 
         {count === 0 ? (
-          <EmptyState icon={CheckSquare} title="Todo al día" description="No tenés tareas vencidas ni para hoy." />
+          <EmptyState icon={CheckSquare} title="Todo al día" description="No tenés pendientes ni tareas para hoy." />
         ) : (
           <div className="space-y-4">
+            {pendingReservations.length > 0 && (
+              <div>
+                <p className="mb-2 flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                  <Lock className="size-3.5 text-warning" /> Solicitudes de reserva ({pendingReservations.length})
+                </p>
+                <div className="space-y-1.5">
+                  {pendingReservations.map((r) => (
+                    <button
+                      key={r.id}
+                      onClick={() => go(`/stock/${r.product_id}`)}
+                      className="flex w-full items-center justify-between gap-3 rounded-lg border p-2.5 text-left hover:bg-accent"
+                    >
+                      <span className="truncate text-sm font-medium">{r.product_name}</span>
+                      <Badge variant="muted" className="shrink-0">{r.requested_by_name}</Badge>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
             {overdue.length > 0 && (
               <Section title="Vencidas" icon={AlertTriangle} tone="text-destructive" tasks={overdue} go={go} />
             )}

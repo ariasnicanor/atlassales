@@ -334,6 +334,28 @@ export interface DataState {
   leadDistribution: LeadDistributionConfig;
   remarketingRequests: RemarketingRequest[];
   saleConfirmations: SaleConfirmation[];
+  reservationRequests: ReservationRequest[];
+}
+
+export type ReservationRequestStatus = "pendiente" | "aprobada" | "rechazada";
+
+/** Un vendedor pide reservar una unidad; la aprueba Supervisor / Admin. */
+export interface ReservationRequest {
+  id: UUID;
+  company_id: UUID;
+  product_id: UUID;
+  product_name: string;
+  lead_id?: UUID | null;
+  lead_name?: string | null;
+  requested_by: UUID;
+  requested_by_name: string;
+  note?: string | null;
+  status: ReservationRequestStatus;
+  resolved_by?: UUID | null;
+  resolved_by_name?: string | null;
+  resolution_note?: string | null;
+  resolved_at?: ISODate | null;
+  created_at: ISODate;
 }
 
 export type SaleConfirmationStatus = "pendiente" | "confirmada" | "rechazada";

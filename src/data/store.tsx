@@ -19,6 +19,7 @@ import type {
   Product,
   Quote,
   RemarketingRequest,
+  ReservationRequest,
   SaleConfirmation,
   FinancialSimulation,
   Task,
@@ -71,6 +72,7 @@ function loadState(): DataState {
       if (!parsed.auditLog) parsed.auditLog = [];
       if (!parsed.remarketingRequests) parsed.remarketingRequests = [];
       if (!parsed.saleConfirmations) parsed.saleConfirmations = [];
+      if (!parsed.reservationRequests) parsed.reservationRequests = [];
       if (!parsed.leadDistribution) {
         parsed.leadDistribution = {
           mode: "round_robin",
@@ -153,6 +155,18 @@ interface DataContextValue extends DataState {
   resolveSaleConfirmation: (
     id: string,
     status: "confirmada" | "rechazada",
+    note?: string | null
+  ) => void;
+  /** El vendedor solicita reservar una unidad de stock. */
+  requestReservation: (input: {
+    product_id: string;
+    lead_id?: string | null;
+    note?: string | null;
+  }) => void;
+  /** Supervisor/Admin aprueba o rechaza la reserva (marca la unidad reservada). */
+  resolveReservationRequest: (
+    id: string,
+    status: "aprobada" | "rechazada",
     note?: string | null
   ) => void;
   /** Session pasa el usuario actual acá para que el store lo use en auditoría. */
@@ -402,6 +416,77 @@ export function DataProvider({ children }: { children: ReactNode }) {
           {
             action: status === "confirmada" ? "sale_confirmed" : "sale_rejected",
             resource: "sale",
+            resource_id: id,
+            meta: note ?? null,
+          }
+        );
+      },
+
+      requestReservation: ({ product_id, lead_id, note }) => {
+        const actor = actorRef.current;
+        if (!actor) return;
+        const now = nowIso();
+        withAudit(
+          (s) => {
+            const product = s.products.find((p) => p.id === product_id);
+            if (!product) return s;
+            const already = s.reservationRequests.some(
+              (r) => r.product_id === product_id && r.requested_by === actor.id && r.status === "pendiente"
+            );
+            if (already) return s;
+            const lead = lead_id ? s.leads.find((l) => l.id === lead_id) : null;
+            const req: ReservationRequest = {
+              id: uid("resreq"),
+              company_id: s.company.id,
+              product_id,
+              product_name: product.name,
+              lead_id: lead?.id ?? null,
+              lead_name: lead?.name ?? null,
+              requested_by: actor.id,
+              requested_by_name: actor.name,
+              note: note ?? null,
+              status: "pendiente",
+              created_at: now,
+            };
+            return { ...s, reservationRequests: [req, ...s.reservationRequests] };
+          },
+          {
+            action: "reservation_requested",
+            resource: "stock",
+            resource_id: product_id,
+            meta: note ?? null,
+          }
+        );
+      },
+
+      resolveReservationRequest: (id, status, note) => {
+        const actor = actorRef.current;
+        const now = nowIso();
+        withAudit(
+          (s) => {
+            const req = s.reservationRequests.find((r) => r.id === id);
+            if (!req || req.status !== "pendiente") return s;
+            const reservationRequests = s.reservationRequests.map((r) =>
+              r.id === id
+                ? {
+                    ...r,
+                    status,
+                    resolved_by: actor?.id ?? null,
+                    resolved_by_name: actor?.name ?? "Sistema",
+                    resolution_note: note ?? null,
+                    resolved_at: now,
+                  }
+                : r
+            );
+            if (status !== "aprobada") return { ...s, reservationRequests };
+            const products = s.products.map((p) =>
+              p.id === req.product_id ? { ...p, status: "reservado" as const } : p
+            );
+            return { ...s, reservationRequests, products };
+          },
+          {
+            action: status === "aprobada" ? "reservation_approved" : "reservation_rejected",
+            resource: "stock",
             resource_id: id,
             meta: note ?? null,
           }

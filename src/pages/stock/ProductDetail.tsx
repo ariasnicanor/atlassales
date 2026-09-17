@@ -31,7 +31,7 @@ import type { ProductStatus } from "@/types";
 
 export default function ProductDetail() {
   const { id } = useParams();
-  const { products, updateProduct, logAudit } = useData();
+  const { products, updateProduct, reservationRequests, requestReservation, resolveReservationRequest } = useData();
   const { leads } = useScopedData();
   const { currentUser } = useSession();
   const { toast } = useToast();
@@ -40,6 +40,10 @@ export default function ProductDetail() {
   // Solo Supervisor / Admin gestionan el estado de la unidad y ven notas internas.
   const canManage = can(currentUser, "edit", "stock");
   const canRequest = !canManage && can(currentUser, "request", "stock");
+  const productRequests = reservationRequests.filter((r) => r.product_id === id);
+  const pendingReservations = productRequests.filter((r) => r.status === "pendiente");
+  const resolvedReservations = productRequests.filter((r) => r.status !== "pendiente");
+  const myPending = pendingReservations.some((r) => r.requested_by === currentUser?.id);
 
   if (!product) {
     return (
@@ -162,6 +166,56 @@ export default function ProductDetail() {
             </Card>
           )}
 
+          {canManage && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Solicitudes de reserva ({pendingReservations.length})</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {pendingReservations.length === 0 ? (
+                  <p className="text-sm text-muted-foreground">No hay solicitudes pendientes para esta unidad.</p>
+                ) : (
+                  pendingReservations.map((r) => (
+                    <div key={r.id} className="space-y-2 rounded-lg border p-3">
+                      <p className="text-sm font-medium">{r.requested_by_name}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {r.lead_name ? `Cliente: ${r.lead_name} · ` : ""}
+                        {new Date(r.created_at).toLocaleString("es-AR")}
+                        {r.note ? ` · ${r.note}` : ""}
+                      </p>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => {
+                            resolveReservationRequest(r.id, "aprobada");
+                            toast("Reserva aprobada · unidad reservada");
+                          }}
+                        >
+                          Aprobar
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            resolveReservationRequest(r.id, "rechazada");
+                            toast("Solicitud rechazada");
+                          }}
+                        >
+                          Rechazar
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                )}
+                {resolvedReservations.length > 0 && (
+                  <p className="text-xs text-muted-foreground">
+                    Última resuelta: {resolvedReservations[0].requested_by_name} · {resolvedReservations[0].status}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          )}
+
           {canRequest && (
             <Card>
               <CardHeader><CardTitle>Disponibilidad</CardTitle></CardHeader>
@@ -170,23 +224,24 @@ export default function ProductDetail() {
                   El estado de la unidad lo gestiona tu supervisor. Podés solicitar la reserva
                   para tu cliente y te avisarán cuando la aprueben.
                 </p>
-                <Button
-                  className="w-full"
-                  variant="outline"
-                  disabled={product.status !== "disponible"}
-                  onClick={() => {
-                    logAudit({
-                      action: "request",
-                      resource: "stock",
-                      resource_id: product.id,
-                      meta: `Solicitud de reserva · ${product.name}`,
-                    });
-                    toast("Solicitud de reserva enviada al supervisor");
-                  }}
-                >
-                  <Lock className="size-4" />
-                  {product.status === "disponible" ? "Solicitar reserva" : "Unidad no disponible"}
-                </Button>
+                {myPending ? (
+                  <p className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-sm">
+                    Solicitud enviada · esperando aprobación del supervisor.
+                  </p>
+                ) : (
+                  <Button
+                    className="w-full"
+                    variant="outline"
+                    disabled={product.status !== "disponible"}
+                    onClick={() => {
+                      requestReservation({ product_id: product.id });
+                      toast("Solicitud de reserva enviada al supervisor");
+                    }}
+                  >
+                    <Lock className="size-4" />
+                    {product.status === "disponible" ? "Solicitar reserva" : "Unidad no disponible"}
+                  </Button>
+                )}
               </CardContent>
             </Card>
           )}
