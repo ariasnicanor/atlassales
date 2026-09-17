@@ -505,7 +505,7 @@ function EventRow({ ev, onSelect }: { ev: CalEvent; onSelect: (ev: CalEvent) => 
   );
 }
 
-function WeekView({ anchor, events, onSelect }: { anchor: Date; events: CalEvent[]; onSelect: (ev: CalEvent) => void }) {
+function WeekView({ anchor, events, onSelect, onSchedule }: { anchor: Date; events: CalEvent[]; onSelect: (ev: CalEvent) => void; onSchedule: (d: Date) => void }) {
   const start = startOfWeek(anchor, { weekStartsOn: 1 });
   const days = eachDayOfInterval({ start, end: endOfWeek(anchor, { weekStartsOn: 1 }) });
   return (
