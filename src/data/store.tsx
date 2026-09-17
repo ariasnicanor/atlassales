@@ -384,7 +384,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             if (status !== "confirmada") return { ...s, saleConfirmations };
             const products = s.products.map((p) =>
               p.id === req.product_id
-                ? { ...p, status: "vendido" as const, availability: 0, updated_at: now }
+                ? { ...p, status: "vendido" as const, availability: 0 }
                 : p
             );
             const leads = s.leads.map((l) =>
