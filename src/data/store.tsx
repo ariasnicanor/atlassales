@@ -324,6 +324,90 @@ export function DataProvider({ children }: { children: ReactNode }) {
         );
       },
 
+      requestSaleConfirmation: ({ lead_id, product_id, amount, note }) => {
+        const actor = actorRef.current;
+        if (!actor) return;
+        const now = nowIso();
+        withAudit(
+          (s) => {
+            const lead = s.leads.find((l) => l.id === lead_id);
+            const product = s.products.find((p) => p.id === product_id);
+            if (!lead || !product) return s;
+            const already = s.saleConfirmations.some(
+              (r) => r.lead_id === lead_id && r.status === "pendiente"
+            );
+            if (already) return s;
+            const req: SaleConfirmation = {
+              id: uid("salereq"),
+              company_id: s.company.id,
+              lead_id,
+              lead_name: lead.name,
+              product_id,
+              product_name: product.name,
+              amount: amount ?? product.promo_price ?? product.list_price ?? null,
+              requested_by: actor.id,
+              requested_by_name: actor.name,
+              note: note ?? null,
+              status: "pendiente",
+              created_at: now,
+            };
+            return { ...s, saleConfirmations: [req, ...s.saleConfirmations] };
+          },
+          {
+            action: "sale_confirmation_requested",
+            resource: "sale",
+            resource_id: lead_id,
+            meta: note ?? null,
+          }
+        );
+      },
+
+      resolveSaleConfirmation: (id, status, note) => {
+        const actor = actorRef.current;
+        const now = nowIso();
+        withAudit(
+          (s) => {
+            const req = s.saleConfirmations.find((r) => r.id === id);
+            if (!req || req.status !== "pendiente") return s;
+            const saleConfirmations = s.saleConfirmations.map((r) =>
+              r.id === id
+                ? {
+                    ...r,
+                    status,
+                    resolved_by: actor?.id ?? null,
+                    resolved_by_name: actor?.name ?? "Sistema",
+                    resolution_note: note ?? null,
+                    resolved_at: now,
+                  }
+                : r
+            );
+            if (status !== "confirmada") return { ...s, saleConfirmations };
+            const products = s.products.map((p) =>
+              p.id === req.product_id
+                ? { ...p, status: "vendido" as const, availability: 0, updated_at: now }
+                : p
+            );
+            const leads = s.leads.map((l) =>
+              l.id === req.lead_id
+                ? {
+                    ...l,
+                    status: "vendido" as const,
+                    last_management_at: now,
+                    updated_at: now,
+                  }
+                : l
+            );
+            return { ...s, saleConfirmations, products, leads };
+          },
+          {
+            action: status === "confirmada" ? "sale_confirmed" : "sale_rejected",
+            resource: "sale",
+            resource_id: id,
+            meta: note ?? null,
+          }
+        );
+      },
+
       updateCompany: (patch) =>
         withAudit(
           (s) => ({ ...s, company: { ...s.company, ...patch } }),
