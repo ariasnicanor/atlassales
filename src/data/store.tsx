@@ -71,6 +71,7 @@ function loadState(): DataState {
       if (!parsed.auditLog) parsed.auditLog = [];
       if (!parsed.remarketingRequests) parsed.remarketingRequests = [];
       if (!parsed.saleConfirmations) parsed.saleConfirmations = [];
+      if (!parsed.reservationRequests) parsed.reservationRequests = [];
       if (!parsed.leadDistribution) {
         parsed.leadDistribution = {
           mode: "round_robin",
