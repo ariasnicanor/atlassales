@@ -15,6 +15,7 @@ import { useData } from "@/data/store";
 import { useSession } from "@/context/session";
 import { useToast } from "@/components/ui/toast";
 import { can } from "@/lib/permissions";
+import { whatsappLink } from "@/lib/contact";
 import { fmtDate, fmtDateTime } from "@/lib/date";
 import { INTERACTION_LABEL } from "@/lib/labels";
 import type { Lead } from "@/types";
