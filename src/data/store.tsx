@@ -156,6 +156,18 @@ interface DataContextValue extends DataState {
     status: "confirmada" | "rechazada",
     note?: string | null
   ) => void;
+  /** El vendedor solicita reservar una unidad de stock. */
+  requestReservation: (input: {
+    product_id: string;
+    lead_id?: string | null;
+    note?: string | null;
+  }) => void;
+  /** Supervisor/Admin aprueba o rechaza la reserva (marca la unidad reservada). */
+  resolveReservationRequest: (
+    id: string,
+    status: "aprobada" | "rechazada",
+    note?: string | null
+  ) => void;
   /** Session pasa el usuario actual acá para que el store lo use en auditoría. */
   _setActor: (user: User | null) => void;
 }
