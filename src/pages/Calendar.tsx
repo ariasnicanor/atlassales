@@ -16,13 +16,18 @@ import {
   startOfWeek,
 } from "date-fns";
 import { es } from "date-fns/locale";
-import { ChevronLeft, ChevronRight, Flame, CheckSquare, CalendarClock, Link2 } from "lucide-react";
+import { ChevronLeft, ChevronRight, Flame, CheckSquare, CalendarClock, Link2, Plus } from "lucide-react";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { Input } from "@/components/ui/input";
+import { Select } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { Field } from "@/components/forms/Field";
+import { useToast } from "@/components/ui/toast";
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { LEAD_STATUS_LABEL, TASK_STATUS_LABEL } from "@/lib/labels";
 import { EmptyState } from "@/components/commercial/EmptyState";
 import { useData } from "@/data/store";
