@@ -71,12 +71,19 @@ export default function LeadDetail() {
   const [taskDate, setTaskDate] = useState(() => new Date().toISOString().slice(0, 10));
   const [taskTime, setTaskTime] = useState("09:00");
   const [taskPriority, setTaskPriority] = useState<TaskPriority>("media");
+  const [saleProductId, setSaleProductId] = useState("");
+  const [saleNote, setSaleNote] = useState("");
 
   const canViewRemarketing = can(currentUser, "view", "remarketing");
   const canRequestRemarketing = can(currentUser, "request", "remarketing");
   const pendingRequest = remarketingRequests.find(
     (r) => r.lead_id === id && r.status === "pendiente" && r.requested_by === currentUser?.id
   );
+  // Confirmación de venta: el vendedor cierra, Supervisor/Admin confirma.
+  const canConfirmSale = can(currentUser, "approve", "stock");
+  const leadSales = saleConfirmations.filter((r) => r.lead_id === id);
+  const pendingSale = leadSales.find((r) => r.status === "pendiente");
+  const lastSale = leadSales[0];
 
   if (!lead) {
     return (
