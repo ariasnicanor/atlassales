@@ -42,6 +42,13 @@
   --input: oklch(0.92 0.01 240);
   --ring: oklch(0.68 0.16 230);
 
+  --login-navy: oklch(0.24 0.07 260);
+  --login-navy-soft: oklch(0.31 0.075 255);
+  --login-panel: oklch(0.19 0.055 258);
+  --login-panel-foreground: oklch(0.97 0.01 240);
+  --login-panel-muted: oklch(0.79 0.025 245);
+  --login-mark: oklch(0.83 0.07 245);
+
   --radius: 0.75rem;
 }
 
@@ -96,14 +103,20 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-login-navy: var(--login-navy);
+  --color-login-navy-soft: var(--login-navy-soft);
+  --color-login-panel: var(--login-panel);
+  --color-login-panel-foreground: var(--login-panel-foreground);
+  --color-login-panel-muted: var(--login-panel-muted);
+  --color-login-mark: var(--login-mark);
 
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
   --radius-xl: calc(var(--radius) + 4px);
 
-  --font-sans:
-    ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  --font-sans: "Manrope", ui-sans-serif, system-ui, sans-serif;
+  --font-heading: "Sora", "Manrope", ui-sans-serif, system-ui, sans-serif;
 
   --animate-fade-in: fade-in 0.25s ease-out;
   --animate-accordion-down: accordion-down 0.2s ease-out;
@@ -136,6 +149,22 @@
     color: var(--color-foreground);
     -webkit-font-smoothing: antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
+  }
+}
+
+@layer components {
+  .login-shell {
+    background: var(--login-navy);
+  }
+  .login-panel {
+    background: var(--login-panel);
+  }
+  .login-grid {
+    background-image:
+      linear-gradient(color-mix(in oklab, var(--login-panel-foreground) 14%, transparent) 1px, transparent 1px),
+      linear-gradient(90deg, color-mix(in oklab, var(--login-panel-foreground) 14%, transparent) 1px, transparent 1px);
+    background-size: 52px 52px;
+    mask-image: linear-gradient(to bottom right, transparent, black 40%, transparent);
   }
 }
 

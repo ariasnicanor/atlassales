@@ -1,5 +1,6 @@
 import { useNavigate, Link } from "react-router-dom";
-import { Waves, ArrowRight, Building2, Sparkles } from "lucide-react";
+import { ArrowRight, Building2, Sparkles } from "lucide-react";
+import { AtlasLogo } from "@/components/AtlasLogo";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -23,8 +24,8 @@ export default function Onboarding() {
     <div className="flex min-h-screen items-center justify-center bg-gradient-to-br from-background to-muted p-6">
       <div className="w-full max-w-xl space-y-6">
         <div className="flex items-center justify-center gap-2.5">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Waves className="size-6" />
+          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-foreground">
+            <AtlasLogo className="size-6" />
           </div>
           <span className="text-lg font-semibold">Atlas Sales OS</span>
         </div>
