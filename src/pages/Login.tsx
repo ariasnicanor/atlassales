@@ -50,9 +50,9 @@ export default function Login() {
   const featured = users.filter((u) => u.active).slice(0, 3);
 
   return (
-    <main className="login-shell flex min-h-screen items-center justify-center p-0 sm:p-5 lg:p-8">
-      <div className="flex min-h-screen w-full max-w-6xl overflow-hidden bg-card shadow-2xl sm:min-h-[min(740px,calc(100vh-2.5rem))] sm:rounded-[2rem]">
-        <section className="flex w-full flex-col px-6 py-7 sm:px-10 sm:py-9 md:w-[44%] lg:w-[40%] lg:px-14">
+    <main className="login-shell flex h-dvh items-center justify-center overflow-hidden p-0 sm:p-4 lg:p-5">
+      <div className="flex h-full w-full max-w-6xl overflow-hidden bg-card shadow-2xl sm:rounded-[2rem]">
+        <section className="login-form relative flex w-full flex-col px-6 py-5 sm:px-10 sm:py-6 md:w-[44%] lg:w-[40%] lg:px-14">
           <div className="flex items-center gap-3 text-login-navy">
             <AtlasLogo className="size-9" />
             <div className="leading-none">
@@ -61,16 +61,16 @@ export default function Login() {
             </div>
           </div>
 
-          <div className="my-auto w-full py-12">
-            <div className="mb-8">
-              <Badge variant="secondary" className="mb-4 border-0">
+          <div className="my-auto w-full py-4">
+            <div className="mb-5">
+              <Badge variant="secondary" className="mb-3 border-0">
                 <Database className="size-3" /> Entorno demo
               </Badge>
               <h1 className="font-heading text-3xl font-semibold text-login-navy">Bienvenido</h1>
               <p className="mt-2 text-sm text-muted-foreground">Ingresá a {company.name}.</p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="space-y-3">
               <Field label="DNI o correo" htmlFor="login-identity">
                 <div className="relative">
                   <UserRound className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
@@ -82,7 +82,7 @@ export default function Login() {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     placeholder="tu@empresa.com"
-                    className="h-12 rounded-full pl-11 pr-4"
+                    className="h-11 rounded-full pl-11 pr-4"
                   />
                 </div>
               </Field>
@@ -97,7 +97,7 @@ export default function Login() {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     placeholder="••••••••"
-                    className="h-12 rounded-full pl-11 pr-12"
+                    className="h-11 rounded-full pl-11 pr-12"
                   />
                   <Button
                     type="button"
@@ -118,12 +118,12 @@ export default function Login() {
               </p>
             )}
 
-            <Button type="submit" className="h-12 w-full rounded-full bg-login-navy font-semibold text-login-panel-foreground hover:bg-login-navy-soft" disabled={loading}>
+            <Button type="submit" className="h-11 w-full rounded-full bg-login-navy font-semibold text-login-panel-foreground hover:bg-login-navy-soft" disabled={loading}>
               {loading && <Loader2 className="size-4 animate-spin" />} Ingresar <ArrowRight className="size-4" />
             </Button>
           </form>
 
-          <div className="mt-5 flex items-center justify-between text-sm">
+          <div className="mt-3 flex items-center justify-between text-sm">
             <Link to="/register" className="text-primary hover:underline">
               Crear cuenta
             </Link>
@@ -138,13 +138,13 @@ export default function Login() {
             </Button>
           </div>
 
-          <p className="mt-4 border-t pt-4 text-center text-xs text-muted-foreground">
+          <p className="mt-2 border-t pt-2 text-center text-xs text-muted-foreground">
             Contraseña para la demo:{" "}
             <code className="rounded bg-muted px-1 py-0.5 font-mono">{DEMO_PASSWORD}</code>
           </p>
 
           {showDemo && (
-            <div className="mt-3 space-y-2 animate-fade-in">
+            <div className="absolute inset-x-6 bottom-12 z-20 space-y-2 rounded-lg border bg-popover p-3 shadow-xl animate-fade-in sm:inset-x-10 lg:inset-x-14">
               {featured.map((u) => (
                 <Button
                   key={u.id}
