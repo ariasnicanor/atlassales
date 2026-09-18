@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from "react";
-import { Waves, Palette, Save, RotateCcw, UserRound, Lock, Calendar, RefreshCw, Link2, Unlink, Target, Shuffle, Plus, Trash2, Bell } from "lucide-react";
+import { Palette, Save, RotateCcw, UserRound, Lock, Calendar, RefreshCw, Link2, Unlink, Target, Shuffle, Plus, Trash2, Bell } from "lucide-react";
+import { AtlasLogo } from "@/components/AtlasLogo";
 import { PageHeader } from "@/components/layout/PageHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -199,7 +200,7 @@ export default function Settings() {
                   {form.logo_url ? (
                     <img src={form.logo_url} alt="logo" className="size-8 rounded object-cover" />
                   ) : (
-                    <Waves className="size-6" />
+                    <AtlasLogo className="size-6" />
                   )}
                 </div>
                 <div className="min-w-0">

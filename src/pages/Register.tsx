@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import { Waves, Loader2, ArrowLeft } from "lucide-react";
+import { Loader2, ArrowLeft } from "lucide-react";
+import { AtlasLogo } from "@/components/AtlasLogo";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Field } from "@/components/forms/Field";
@@ -37,8 +38,8 @@ export default function Register() {
     <div className="flex min-h-screen items-center justify-center bg-background p-6">
       <div className="w-full max-w-md space-y-6">
         <div className="flex items-center gap-2.5">
-          <div className="flex size-10 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <Waves className="size-5" />
+          <div className="flex size-10 items-center justify-center rounded-xl bg-primary/10 text-foreground">
+            <AtlasLogo className="size-6" />
           </div>
           <span className="text-lg font-semibold">Atlas Sales OS</span>
         </div>

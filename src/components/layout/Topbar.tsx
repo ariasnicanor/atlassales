@@ -1,5 +1,6 @@
 import { useNavigate } from "react-router-dom";
-import { Moon, Sun, Plus, LogOut, Database, RotateCcw, Waves } from "lucide-react";
+import { Moon, Sun, Plus, LogOut, Database, RotateCcw } from "lucide-react";
+import { AtlasLogo } from "@/components/AtlasLogo";
 import { Button } from "@/components/ui/button";
 import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
@@ -19,8 +20,8 @@ export function Topbar() {
     <header className="sticky top-0 z-30 flex h-16 w-full items-center gap-2 overflow-hidden border-b bg-background/95 px-4 backdrop-blur">
       {/* Brand (solo mobile; en desktop está en el sidebar) */}
       <div className="flex min-w-0 items-center gap-2 lg:hidden">
-        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Waves className="size-4" />
+        <div className="flex size-8 shrink-0 items-center justify-center rounded-lg bg-primary/10 text-foreground">
+          <AtlasLogo className="size-5" />
         </div>
         <span className="truncate text-sm font-semibold">{company.name}</span>
       </div>

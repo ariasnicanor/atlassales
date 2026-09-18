@@ -1,5 +1,6 @@
 import { NavLink, Link } from "react-router-dom";
-import { Lock, Waves, Sparkles } from "lucide-react";
+import { Lock, Sparkles } from "lucide-react";
+import { AtlasLogo } from "@/components/AtlasLogo";
 import { getProfileSections } from "@/lib/nav";
 import { useData } from "@/data/store";
 import { usePlan } from "@/hooks/usePlan";
@@ -17,8 +18,8 @@ export function Sidebar({ onNavigate }: { onNavigate?: () => void }) {
     <div className="flex h-full flex-col bg-card">
       {/* Brand */}
       <div className="flex items-center gap-2.5 border-b px-5 py-4">
-        <div className="flex size-9 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-          <Waves className="size-5" />
+        <div className="flex size-9 items-center justify-center rounded-lg bg-primary/10 text-foreground">
+          <AtlasLogo className="size-6" />
         </div>
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold leading-tight">{company.name}</p>
