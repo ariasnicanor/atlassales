@@ -20,6 +20,8 @@ export function ProductImage({ src, alt, className }: ProductImageProps) {
           src={src as string}
           alt={alt}
           loading="lazy"
+          decoding="async"
+          referrerPolicy="no-referrer"
           onError={() => setError(true)}
           className="size-full object-cover"
         />

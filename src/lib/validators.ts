@@ -56,6 +56,7 @@ export const productSchema = z.object({
   status: z.enum(["disponible", "reservado", "vendido", "sin_stock"]),
   description: z.string().optional().or(z.literal("")),
   image_url: z.string().optional().or(z.literal("")),
+  images_text: z.string().optional().or(z.literal("")),
   internal_notes: z.string().optional().or(z.literal("")),
 });
 export type ProductFormValues = z.infer<typeof productSchema>;
