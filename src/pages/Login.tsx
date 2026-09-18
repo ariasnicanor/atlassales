@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { ArrowRight, Database, Loader2, Eye, EyeOff, UserRound, LockKeyhole, ChevronDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -23,10 +23,26 @@ export default function Login() {
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [showDemo, setShowDemo] = useState(false);
+  const demoTriggerRef = useRef<HTMLDivElement>(null);
+  const demoMenuRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     if (isAuthenticated) navigate("/dashboard", { replace: true });
   }, [isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (!showDemo) return;
+
+    function closeDemoMenu(event: PointerEvent) {
+      const target = event.target;
+      if (!(target instanceof Node)) return;
+      if (demoTriggerRef.current?.contains(target) || demoMenuRef.current?.contains(target)) return;
+      setShowDemo(false);
+    }
+
+    document.addEventListener("pointerdown", closeDemoMenu);
+    return () => document.removeEventListener("pointerdown", closeDemoMenu);
+  }, [showDemo]);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -47,7 +63,10 @@ export default function Login() {
     );
   }
 
-  const featured = users.filter((u) => u.active).slice(0, 3);
+  const featured = (["admin", "supervisor", "vendedor", "recepcion"] as const).flatMap((role) => {
+    const user = users.find((candidate) => candidate.active && candidate.role === role);
+    return user ? [user] : [];
+  });
 
   return (
     <main className="login-shell flex h-dvh items-center justify-center overflow-hidden p-0 sm:p-4 lg:p-5">
@@ -127,15 +146,17 @@ export default function Login() {
             <Link to="/register" className="text-primary hover:underline">
               Crear cuenta
             </Link>
-            <Button
-              type="button"
-              variant="ghost"
-              onClick={() => setShowDemo((v) => !v)}
-              className="h-10 gap-1 px-2 text-muted-foreground"
-              aria-expanded={showDemo}
-            >
-              Perfiles demo <ChevronDown className={`size-4 transition-transform ${showDemo ? "rotate-180" : ""}`} />
-            </Button>
+            <div ref={demoTriggerRef}>
+              <Button
+                type="button"
+                variant="ghost"
+                onClick={() => setShowDemo((v) => !v)}
+                className="h-10 gap-1 px-2 text-muted-foreground"
+                aria-expanded={showDemo}
+              >
+                Perfiles demo <ChevronDown className={`size-4 transition-transform ${showDemo ? "rotate-180" : ""}`} />
+              </Button>
+            </div>
           </div>
 
           <p className="mt-2 border-t pt-2 text-center text-xs text-muted-foreground">
@@ -144,7 +165,7 @@ export default function Login() {
           </p>
 
           {showDemo && (
-            <div className="absolute inset-x-6 bottom-12 z-20 space-y-2 rounded-lg border bg-popover p-3 shadow-xl animate-fade-in sm:inset-x-10 lg:inset-x-14">
+            <div ref={demoMenuRef} className="absolute inset-x-6 bottom-12 z-20 space-y-2 rounded-lg border bg-popover p-3 shadow-xl animate-fade-in sm:inset-x-10 lg:inset-x-14">
               {featured.map((u) => (
                 <Button
                   key={u.id}
