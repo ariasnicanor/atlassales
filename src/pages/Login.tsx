@@ -71,46 +71,46 @@ export default function Login() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Field label="DNI o correo" htmlFor="login-identity">
+              <Field label="Correo" htmlFor="login-identity">
                 <div className="relative">
                   <UserRound className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                id="login-identity"
-                type="text"
-                autoComplete="email"
-                required
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="tu@empresa.com"
-                className="h-12 rounded-full pl-11 pr-4"
-              />
+                    id="login-identity"
+                    type="email"
+                    autoComplete="email"
+                    required
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    placeholder="tu@empresa.com"
+                    className="h-12 rounded-full pl-11 pr-4"
+                  />
                 </div>
               </Field>
               <Field label="Contraseña" htmlFor="login-password">
                 <div className="relative">
                   <LockKeyhole className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
-                  id="login-password"
-                  type={showPass ? "text" : "password"}
-                  autoComplete="current-password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  placeholder="••••••••"
-                  className="h-12 rounded-full pl-11 pr-12"
-                />
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => setShowPass((v) => !v)}
-                  className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full text-muted-foreground"
-                  aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
-                >
-                  {showPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
-                </Button>
-              </div>
-            </Field>
+                    id="login-password"
+                    type={showPass ? "text" : "password"}
+                    autoComplete="current-password"
+                    required
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    className="h-12 rounded-full pl-11 pr-12"
+                  />
+                  <Button
+                    type="button"
+                    variant="ghost"
+                    size="icon"
+                    onClick={() => setShowPass((v) => !v)}
+                    className="absolute right-1 top-1/2 -translate-y-1/2 rounded-full text-muted-foreground"
+                    aria-label={showPass ? "Ocultar contraseña" : "Mostrar contraseña"}
+                  >
+                    {showPass ? <EyeOff className="size-4" /> : <Eye className="size-4" />}
+                  </Button>
+                </div>
+              </Field>
 
             {error && (
               <p className="rounded-md bg-destructive/10 px-3 py-2 text-sm text-destructive">
@@ -171,7 +171,7 @@ export default function Login() {
           <p className="text-center text-xs text-muted-foreground md:text-left">
             © {new Date().getFullYear()} Atlas Sales OS
           </p>
-        </div>
+        </section>
 
         <section className="login-panel relative hidden flex-1 overflow-hidden md:flex">
           <div className="login-grid absolute inset-0 opacity-20" />
