@@ -71,12 +71,12 @@ export default function Login() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4">
-              <Field label="Correo" htmlFor="login-identity">
+              <Field label="DNI o correo" htmlFor="login-identity">
                 <div className="relative">
                   <UserRound className="pointer-events-none absolute left-4 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
                   <Input
                     id="login-identity"
-                    type="email"
+                    type="text"
                     autoComplete="email"
                     required
                     value={email}
