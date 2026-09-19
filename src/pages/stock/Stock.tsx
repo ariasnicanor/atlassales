@@ -28,6 +28,7 @@ import {
 import { useData } from "@/data/store";
 import { useToast } from "@/components/ui/toast";
 import { formatCurrency } from "@/lib/utils";
+import { parseImageList } from "@/lib/images";
 import { productSchema, type ProductFormValues } from "@/lib/validators";
 
 const FUELS = ["Nafta", "Diésel", "Híbrido", "Eléctrico", "GNC"];
@@ -79,8 +80,10 @@ export default function Stock() {
   }, [products, search, brand, category, condition]);
 
   const onSubmit = (values: ProductFormValues) => {
+    const { images_text, ...rest } = values;
+    const gallery = parseImageList([values.image_url ?? "", images_text ?? ""].join("\n"));
     createProduct({
-      ...values,
+      ...rest,
       promo_price: values.promo_price || null,
       year: values.year || null,
       mileage_km: values.mileage_km || null,
@@ -89,8 +92,8 @@ export default function Stock() {
       version: values.version || null,
       description: values.description || null,
       internal_notes: values.internal_notes || null,
-      images: values.image_url ? [values.image_url] : [],
-      image_url: values.image_url || null,
+      images: gallery,
+      image_url: gallery[0] ?? null,
     });
     toast("Producto creado");
     reset();
@@ -155,7 +158,15 @@ export default function Stock() {
                     </Select>
                   </Field>
                 </div>
-                <Field label="Foto (URL)" hint="Pegá el link de una imagen"><Input {...register("image_url")} placeholder="https://..." /></Field>
+                <Field label="Foto principal (link)" hint="Link de Google Drive, Dropbox o cualquier imagen">
+                  <Input {...register("image_url")} placeholder="https://drive.google.com/file/d/..." />
+                </Field>
+                <Field
+                  label="Más fotos (links)"
+                  hint="Pegá un link por línea. Las fotos quedan alojadas donde están: no ocupan espacio ni hacen lenta la app."
+                >
+                  <Textarea rows={3} {...register("images_text")} placeholder={"https://drive.google.com/file/d/...\nhttps://drive.google.com/file/d/..."} />
+                </Field>
                 <Field label="Descripción comercial"><Textarea {...register("description")} /></Field>
                 <DialogFooter>
                   <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>

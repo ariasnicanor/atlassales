@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -20,6 +21,9 @@ import { Badge } from "@/components/ui/badge";
 import { Field } from "@/components/forms/Field";
 import { ProductStatusBadge } from "@/components/commercial/StatusBadges";
 import { ProductImage } from "@/components/commercial/ProductImage";
+import { ProductGallery } from "@/components/commercial/ProductGallery";
+import { Textarea } from "@/components/ui/textarea";
+import { parseImageList, findDriveFolders } from "@/lib/images";
 import { EmptyState } from "@/components/commercial/EmptyState";
 import { useData } from "@/data/store";
 import { useScopedData } from "@/hooks/useScopedData";
@@ -44,6 +48,17 @@ export default function ProductDetail() {
   const pendingReservations = productRequests.filter((r) => r.status === "pendiente");
   const resolvedReservations = productRequests.filter((r) => r.status !== "pendiente");
   const myPending = pendingReservations.some((r) => r.requested_by === currentUser?.id);
+
+  // Edición de fotos (solo links externos: Drive, Dropbox, etc.)
+  const [photosDraft, setPhotosDraft] = useState<string | null>(null);
+  const currentPhotos = product?.images.length
+    ? product.images
+    : product?.image_url
+      ? [product.image_url]
+      : [];
+  const draft = photosDraft ?? currentPhotos.join("\n");
+  const folderWarning = findDriveFolders(draft).length > 0;
+
 
   if (!product) {
     return (
@@ -91,13 +106,10 @@ export default function ProductDetail() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Ficha principal (estilo mockup) */}
         <Card className="overflow-hidden lg:col-span-2">
-          <ProductImage src={gallery[0]} alt={product.name} className="h-64 w-full sm:h-80" />
-          {gallery.length > 1 && (
-            <div className="flex gap-2 p-3">
-              {gallery.slice(0, 4).map((src, i) => (
-                <ProductImage key={i} src={src} alt={`${product.name} ${i + 1}`} className="h-16 w-24 rounded-lg" />
-              ))}
-            </div>
+          {gallery.length > 0 ? (
+            <ProductGallery images={gallery} alt={product.name} />
+          ) : (
+            <ProductImage src={null} alt={product.name} className="h-64 w-full sm:h-80" />
           )}
           <CardContent className="space-y-5 p-5">
             <div>
@@ -162,6 +174,48 @@ export default function ProductDetail() {
                     <p className="text-sm text-muted-foreground">{product.internal_notes}</p>
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+
+          {canManage && (
+            <Card>
+              <CardHeader><CardTitle>Fotos ({currentPhotos.length})</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <Field
+                  label="Links de fotos"
+                  hint="Un link por línea (Google Drive, Dropbox o cualquier imagen). Las fotos quedan alojadas donde están."
+                >
+                  <Textarea
+                    rows={5}
+                    value={draft}
+                    onChange={(e) => setPhotosDraft(e.target.value)}
+                    placeholder={"https://drive.google.com/file/d/...\nhttps://drive.google.com/file/d/..."}
+                  />
+                </Field>
+                {folderWarning && (
+                  <p className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs">
+                    Pegaste el link de una carpeta de Drive: Google no permite mostrarla como galería.
+                    Abrí la carpeta, copiá el link de cada foto (Compartir → Cualquiera con el enlace) y pegalos acá.
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    disabled={photosDraft === null}
+                    onClick={() => {
+                      const images = parseImageList(draft);
+                      updateProduct(product.id, { images, image_url: images[0] ?? null });
+                      setPhotosDraft(null);
+                      toast(images.length ? `${images.length} foto(s) guardadas` : "Fotos eliminadas");
+                    }}
+                  >
+                    Guardar fotos
+                  </Button>
+                  {photosDraft !== null && (
+                    <Button size="sm" variant="ghost" onClick={() => setPhotosDraft(null)}>Cancelar</Button>
+                  )}
+                </div>
               </CardContent>
             </Card>
           )}
