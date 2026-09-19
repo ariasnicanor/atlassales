@@ -79,8 +79,10 @@ export default function Stock() {
   }, [products, search, brand, category, condition]);
 
   const onSubmit = (values: ProductFormValues) => {
+    const { images_text, ...rest } = values;
+    const gallery = parseImageList([values.image_url ?? "", images_text ?? ""].join("\n"));
     createProduct({
-      ...values,
+      ...rest,
       promo_price: values.promo_price || null,
       year: values.year || null,
       mileage_km: values.mileage_km || null,
