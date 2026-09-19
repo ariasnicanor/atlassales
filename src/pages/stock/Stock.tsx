@@ -91,8 +91,8 @@ export default function Stock() {
       version: values.version || null,
       description: values.description || null,
       internal_notes: values.internal_notes || null,
-      images: values.image_url ? [values.image_url] : [],
-      image_url: values.image_url || null,
+      images: gallery,
+      image_url: gallery[0] ?? null,
     });
     toast("Producto creado");
     reset();
@@ -157,7 +157,15 @@ export default function Stock() {
                     </Select>
                   </Field>
                 </div>
-                <Field label="Foto (URL)" hint="Pegá el link de una imagen"><Input {...register("image_url")} placeholder="https://..." /></Field>
+                <Field label="Foto principal (link)" hint="Link de Google Drive, Dropbox o cualquier imagen">
+                  <Input {...register("image_url")} placeholder="https://drive.google.com/file/d/..." />
+                </Field>
+                <Field
+                  label="Más fotos (links)"
+                  hint="Pegá un link por línea. Las fotos quedan alojadas donde están: no ocupan espacio ni hacen lenta la app."
+                >
+                  <Textarea rows={3} {...register("images_text")} placeholder={"https://drive.google.com/file/d/...\nhttps://drive.google.com/file/d/..."} />
+                </Field>
                 <Field label="Descripción comercial"><Textarea {...register("description")} /></Field>
                 <DialogFooter>
                   <DialogClose asChild><Button type="button" variant="outline">Cancelar</Button></DialogClose>
