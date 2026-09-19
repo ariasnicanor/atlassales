@@ -91,13 +91,10 @@ export default function ProductDetail() {
       <div className="grid gap-6 lg:grid-cols-3">
         {/* Ficha principal (estilo mockup) */}
         <Card className="overflow-hidden lg:col-span-2">
-          <ProductImage src={gallery[0]} alt={product.name} className="h-64 w-full sm:h-80" />
-          {gallery.length > 1 && (
-            <div className="flex gap-2 p-3">
-              {gallery.slice(0, 4).map((src, i) => (
-                <ProductImage key={i} src={src} alt={`${product.name} ${i + 1}`} className="h-16 w-24 rounded-lg" />
-              ))}
-            </div>
+          {gallery.length > 0 ? (
+            <ProductGallery images={gallery} alt={product.name} />
+          ) : (
+            <ProductImage src={null} alt={product.name} className="h-64 w-full sm:h-80" />
           )}
           <CardContent className="space-y-5 p-5">
             <div>

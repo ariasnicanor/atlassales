@@ -28,6 +28,7 @@ import {
 import { useData } from "@/data/store";
 import { useToast } from "@/components/ui/toast";
 import { formatCurrency } from "@/lib/utils";
+import { parseImageList } from "@/lib/images";
 import { productSchema, type ProductFormValues } from "@/lib/validators";
 
 const FUELS = ["Nafta", "Diésel", "Híbrido", "Eléctrico", "GNC"];
