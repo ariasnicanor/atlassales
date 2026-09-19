@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { useParams, Link } from "react-router-dom";
 import {
   ArrowLeft,
@@ -20,6 +21,9 @@ import { Badge } from "@/components/ui/badge";
 import { Field } from "@/components/forms/Field";
 import { ProductStatusBadge } from "@/components/commercial/StatusBadges";
 import { ProductImage } from "@/components/commercial/ProductImage";
+import { ProductGallery } from "@/components/commercial/ProductGallery";
+import { Textarea } from "@/components/ui/textarea";
+import { parseImageList, findDriveFolders } from "@/lib/images";
 import { EmptyState } from "@/components/commercial/EmptyState";
 import { useData } from "@/data/store";
 import { useScopedData } from "@/hooks/useScopedData";
