@@ -49,6 +49,17 @@ export default function ProductDetail() {
   const resolvedReservations = productRequests.filter((r) => r.status !== "pendiente");
   const myPending = pendingReservations.some((r) => r.requested_by === currentUser?.id);
 
+  // Edición de fotos (solo links externos: Drive, Dropbox, etc.)
+  const [photosDraft, setPhotosDraft] = useState<string | null>(null);
+  const currentPhotos = product?.images.length
+    ? product.images
+    : product?.image_url
+      ? [product.image_url]
+      : [];
+  const draft = photosDraft ?? currentPhotos.join("\n");
+  const folderWarning = findDriveFolders(draft).length > 0;
+
+
   if (!product) {
     return (
       <EmptyState icon={Package} title="Producto no encontrado" action={<Button asChild><Link to="/stock">Volver</Link></Button>} />
