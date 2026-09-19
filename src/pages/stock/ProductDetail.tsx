@@ -180,6 +180,48 @@ export default function ProductDetail() {
 
           {canManage && (
             <Card>
+              <CardHeader><CardTitle>Fotos ({currentPhotos.length})</CardTitle></CardHeader>
+              <CardContent className="space-y-3">
+                <Field
+                  label="Links de fotos"
+                  hint="Un link por línea (Google Drive, Dropbox o cualquier imagen). Las fotos quedan alojadas donde están."
+                >
+                  <Textarea
+                    rows={5}
+                    value={draft}
+                    onChange={(e) => setPhotosDraft(e.target.value)}
+                    placeholder={"https://drive.google.com/file/d/...\nhttps://drive.google.com/file/d/..."}
+                  />
+                </Field>
+                {folderWarning && (
+                  <p className="rounded-lg border border-warning/50 bg-warning/10 p-3 text-xs">
+                    Pegaste el link de una carpeta de Drive: Google no permite mostrarla como galería.
+                    Abrí la carpeta, copiá el link de cada foto (Compartir → Cualquiera con el enlace) y pegalos acá.
+                  </p>
+                )}
+                <div className="flex gap-2">
+                  <Button
+                    size="sm"
+                    disabled={photosDraft === null}
+                    onClick={() => {
+                      const images = parseImageList(draft);
+                      updateProduct(product.id, { images, image_url: images[0] ?? null });
+                      setPhotosDraft(null);
+                      toast(images.length ? `${images.length} foto(s) guardadas` : "Fotos eliminadas");
+                    }}
+                  >
+                    Guardar fotos
+                  </Button>
+                  {photosDraft !== null && (
+                    <Button size="sm" variant="ghost" onClick={() => setPhotosDraft(null)}>Cancelar</Button>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+
+          {canManage && (
+            <Card>
               <CardHeader>
                 <CardTitle>Solicitudes de reserva ({pendingReservations.length})</CardTitle>
               </CardHeader>
