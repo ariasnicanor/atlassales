@@ -20,6 +20,18 @@ dist-ssr
 .wrangler/
 .dev.vars
 
+# Env (no commitear valores reales; sí .env.example)
+.env
+.env.*
+!.env.example
+
+# OpenWA microservice: node_modules + sesión persistente de WhatsApp
+services/openwa/node_modules
+services/openwa/.env
+services/**/_IGNORE_*
+services/**/session*
+services/**/*.data.json
+
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json

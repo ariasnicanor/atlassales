@@ -41,7 +41,7 @@ export const FEATURES: FeatureDef[] = [
   {
     key: "whatsapp",
     label: "Acceder a WhatsApp",
-    description: "Ver la bandeja simulada de WhatsApp y gestionar leads desde el chat.",
+    description: "Ver la bandeja de WhatsApp (demo, OpenWA o API oficial) y gestionar leads desde el chat.",
     appliesTo: ["admin", "supervisor", "vendedor", "recepcion"],
     defaults: { admin: true, supervisor: true, vendedor: true, recepcion: true },
   },
