@@ -15,7 +15,7 @@ import {
   Loader2,
   X,
   Smile,
-  Paperclip,
+  MessageSquareText,
   MoreVertical,
   Info,
 } from "lucide-react";
@@ -36,6 +36,7 @@ import {
   stalenessInfo,
 } from "@/lib/lead-management";
 import { cn, initials } from "@/lib/utils";
+import { fillTemplate } from "@/lib/contact";
 import type { Lead, LeadStatus } from "@/types";
 import {
   useWhatsApp,
@@ -142,6 +143,60 @@ function shortTime(at?: string | null) {
   return new Date(at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
 }
 
+/** Emojis frecuentes para el selector rápido. */
+const EMOJIS = [
+  "😀",
+  "😃",
+  "😄",
+  "😁",
+  "😊",
+  "😉",
+  "😍",
+  "😎",
+  "🤔",
+  "🙂",
+  "😅",
+  "😂",
+  "🤣",
+  "👍",
+  "👌",
+  "🙌",
+  "👏",
+  "🙏",
+  "💪",
+  "🤝",
+  "👋",
+  "🔥",
+  "✨",
+  "🎉",
+  "⭐",
+  "❤️",
+  "✅",
+  "❌",
+  "⚠️",
+  "💯",
+  "💰",
+  "💵",
+  "📈",
+  "🚗",
+  "🚙",
+  "🛻",
+  "🚚",
+  "🔑",
+  "📆",
+  "🕒",
+  "📞",
+  "📱",
+  "💬",
+  "📍",
+  "📄",
+  "🙂‍↕️",
+  "😬",
+  "😢",
+  "🤷",
+  "👇",
+];
+
 /** Chip/panel de estado de conexión. Muestra el QR cuando hay que vincular. */
 function ConnectionBar({ status }: { status: WaProviderStatus | null }) {
   if (!status || status.provider === "mock") return null;
@@ -204,7 +259,7 @@ function WaAvatar({ name, size = 40 }: { name: string; size?: number }) {
 }
 
 export default function WhatsAppPage() {
-  const { leads, products, createLead, updateLead, addInteraction } = useData();
+  const { leads, products, templates, createLead, updateLead, addInteraction } = useData();
   const { currentUser } = useSession();
   const { toast } = useToast();
 
@@ -225,6 +280,8 @@ export default function WhatsAppPage() {
   const [newFirstName, setNewFirstName] = useState("");
   const [newLastName, setNewLastName] = useState("");
   const [newProduct, setNewProduct] = useState("");
+  const [showEmoji, setShowEmoji] = useState(false);
+  const [showTemplates, setShowTemplates] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Index de leads por teléfono (real-time: se recalcula al mutar store).
@@ -354,6 +411,19 @@ export default function WhatsAppPage() {
         ),
       }));
     }
+  };
+
+  const insertEmoji = (emoji: string) => {
+    setDraft((d) => d + emoji);
+  };
+
+  const applyTemplate = (body: string) => {
+    const filled = fillTemplate(body, {
+      nombre: activeLead?.name ?? activeChat?.name ?? "",
+      producto: activeLead?.product_interest ?? "",
+    });
+    setDraft((d) => (d.trim() ? `${d}\n${filled}` : filled));
+    setShowTemplates(false);
   };
 
   const changeStatus = (leadStatus: LeadStatus) => {
@@ -620,31 +690,115 @@ export default function WhatsAppPage() {
               </div>
 
               {/* Barra de entrada */}
-              <div className="flex items-end gap-2 bg-[#f0f2f5] px-4 py-2.5 dark:bg-[#202c33]">
-                <Smile className="mb-2 size-6 shrink-0 text-[#54656f] dark:text-[#8696a0]" />
-                <Paperclip className="mb-2 size-6 shrink-0 text-[#54656f] dark:text-[#8696a0]" />
-                <Textarea
-                  value={draft}
-                  onChange={(e) => setDraft(e.target.value)}
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      void sendMessage();
-                    }
-                  }}
-                  rows={1}
-                  placeholder="Escribí un mensaje"
-                  className="min-h-10 resize-none rounded-lg border-0 bg-white text-[14px] shadow-none focus-visible:ring-0 dark:bg-[#2a3942]"
-                />
-                <Button
-                  onClick={() => void sendMessage()}
-                  size="icon"
-                  disabled={!draft.trim()}
-                  aria-label="Enviar"
-                  className="size-10 shrink-0 rounded-full bg-[#008069] hover:bg-[#017561] dark:bg-[#00a884] dark:hover:bg-[#06cf9c]"
-                >
-                  <Send className="size-4" />
-                </Button>
+              <div className="relative">
+                {/* Backdrop para cerrar popovers al hacer clic afuera */}
+                {(showEmoji || showTemplates) && (
+                  <button
+                    className="fixed inset-0 z-10 cursor-default"
+                    aria-label="Cerrar"
+                    onClick={() => {
+                      setShowEmoji(false);
+                      setShowTemplates(false);
+                    }}
+                  />
+                )}
+
+                {/* Popover de emojis */}
+                {showEmoji && (
+                  <div className="absolute bottom-full left-3 z-20 mb-2 w-72 rounded-lg border border-black/10 bg-white p-2 shadow-lg dark:border-white/10 dark:bg-[#233138]">
+                    <div className="grid grid-cols-8 gap-1">
+                      {EMOJIS.map((e) => (
+                        <button
+                          key={e}
+                          onClick={() => insertEmoji(e)}
+                          className="rounded p-1 text-xl hover:bg-black/5 dark:hover:bg-white/10"
+                        >
+                          {e}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Popover de plantillas */}
+                {showTemplates && (
+                  <div className="absolute bottom-full left-3 z-20 mb-2 max-h-80 w-80 overflow-y-auto rounded-lg border border-black/10 bg-white p-1.5 shadow-lg scrollbar-thin dark:border-white/10 dark:bg-[#233138]">
+                    <p className="px-2 py-1.5 text-xs font-semibold text-muted-foreground">
+                      Plantillas rápidas
+                    </p>
+                    {templates.length === 0 && (
+                      <p className="px-2 py-2 text-xs text-muted-foreground">
+                        No hay plantillas cargadas.
+                      </p>
+                    )}
+                    {templates.map((t) => (
+                      <button
+                        key={t.id}
+                        onClick={() => applyTemplate(t.body)}
+                        className="w-full rounded-md px-2 py-2 text-left hover:bg-black/5 dark:hover:bg-white/10"
+                      >
+                        <p className="text-[13px] font-medium text-[#111b21] dark:text-[#e9edef]">
+                          {t.title}
+                        </p>
+                        <p className="line-clamp-2 text-xs text-muted-foreground">{t.body}</p>
+                      </button>
+                    ))}
+                  </div>
+                )}
+
+                <div className="flex items-end gap-1.5 bg-[#f0f2f5] px-3 py-2.5 dark:bg-[#202c33]">
+                  <button
+                    onClick={() => {
+                      setShowEmoji((v) => !v);
+                      setShowTemplates(false);
+                    }}
+                    aria-label="Emojis"
+                    title="Emojis"
+                    className={cn(
+                      "mb-1 rounded-full p-1.5 text-[#54656f] hover:bg-black/5 dark:text-[#8696a0] dark:hover:bg-white/10",
+                      showEmoji && "bg-black/5 text-[#008069] dark:bg-white/10 dark:text-[#00a884]",
+                    )}
+                  >
+                    <Smile className="size-6" />
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowTemplates((v) => !v);
+                      setShowEmoji(false);
+                    }}
+                    aria-label="Plantillas"
+                    title="Enviar plantilla"
+                    className={cn(
+                      "mb-1 rounded-full p-1.5 text-[#54656f] hover:bg-black/5 dark:text-[#8696a0] dark:hover:bg-white/10",
+                      showTemplates &&
+                        "bg-black/5 text-[#008069] dark:bg-white/10 dark:text-[#00a884]",
+                    )}
+                  >
+                    <MessageSquareText className="size-6" />
+                  </button>
+                  <Textarea
+                    value={draft}
+                    onChange={(e) => setDraft(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter" && !e.shiftKey) {
+                        e.preventDefault();
+                        void sendMessage();
+                      }
+                    }}
+                    rows={1}
+                    placeholder="Escribí un mensaje"
+                    className="min-h-10 resize-none rounded-lg border-0 bg-white text-[14px] shadow-none focus-visible:ring-0 dark:bg-[#2a3942]"
+                  />
+                  <Button
+                    onClick={() => void sendMessage()}
+                    size="icon"
+                    disabled={!draft.trim()}
+                    aria-label="Enviar"
+                    className="size-10 shrink-0 rounded-full bg-[#008069] hover:bg-[#017561] dark:bg-[#00a884] dark:hover:bg-[#06cf9c]"
+                  >
+                    <Send className="size-4" />
+                  </Button>
+                </div>
               </div>
             </>
           ) : (
