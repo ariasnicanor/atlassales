@@ -149,7 +149,13 @@ async function start() {
   });
 
   sock.ev.on("messages.upsert", ({ messages, type }) => {
-    if (type !== "notify") return;
+    // Diagnóstico: registrar todo lo que llega antes de filtrar.
+    console.log(
+      `[baileys] upsert type=${type} count=${messages.length} jids=${messages
+        .map((m) => m.key?.remoteJid)
+        .join(",")}`,
+    );
+    if (type !== "notify" && type !== "append") return;
     for (const msg of messages) {
       const jid = msg.key?.remoteJid ?? "";
       if (!jid.endsWith("@s.whatsapp.net")) continue; // solo chats individuales
