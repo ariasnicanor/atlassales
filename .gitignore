@@ -6,7 +6,6 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
 node_modules
 dist
 dist-ssr
@@ -15,23 +14,21 @@ dist-ssr
 .tanstack/**
 .nitro
 *.local
-
 # Wrangler / Cloudflare
 .wrangler/
 .dev.vars
-
 # Env (no commitear valores reales; sí .env.example)
 .env
 .env.*
 !.env.example
-
 # OpenWA microservice: node_modules + sesión persistente de WhatsApp
 services/openwa/node_modules
 services/openwa/.env
 services/**/_IGNORE_*
 services/**/session*
 services/**/*.data.json
-
+services/**/_baileys_auth
+services/**/_wwebjs_auth
 # Editor directories and files
 .vscode/*
 !.vscode/extensions.json
@@ -42,3 +39,9 @@ services/**/*.data.json
 *.njsproj
 *.sln
 *.sw?
+
+# managed
+**.data.json
+**.node-persist**
+**_IGNORE_**
+# end managed

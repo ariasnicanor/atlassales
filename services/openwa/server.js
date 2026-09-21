@@ -21,10 +21,29 @@ import express from "express";
 import cors from "cors";
 import { create, ev } from "@open-wa/wa-automate";
 
+// Windows 11 removió wmic.exe, y una dependencia interna de wa-automate lo
+// spawnea para gestionar procesos de Chrome. Ese ENOENT llega como 'error'
+// event no manejado y tumbaría el proceso. Lo ignoramos explícitamente.
+process.on("uncaughtException", (err) => {
+  const msg = String(err?.message ?? err);
+  if (err?.code === "ENOENT" && /wmic/i.test(msg)) {
+    console.warn("[openwa] wmic no disponible (Windows 11) — ignorado, no afecta el QR.");
+    return;
+  }
+  console.error("[openwa] uncaughtException:", err);
+});
+process.on("unhandledRejection", (reason) => {
+  console.error("[openwa] unhandledRejection:", reason);
+});
+
 const PORT = Number(process.env.PORT ?? 3100);
 const SESSION_ID = process.env.WA_SESSION ?? "atlas-sales";
 const AUTH_TOKEN = process.env.AUTH_TOKEN ?? ""; // opcional
 const CORS_ORIGIN = process.env.CORS_ORIGIN ?? "*";
+// Chrome instalado (más compatible con WhatsApp Web Multi-Device que el
+// Chromium de puppeteer). Configurable con CHROME_PATH.
+const CHROME_PATH =
+  process.env.CHROME_PATH ?? "C:\\Program Files\\Google\\Chrome\\Application\\chrome.exe";
 
 // ── Estado en memoria (para el demo). En producción, persistir en DB. ──
 const state = {
@@ -142,12 +161,15 @@ ev.on("qr.**", (qrcode) => {
 create({
   sessionId: SESSION_ID,
   multiDevice: true,
-  headless: true,
+  headless: process.env.WA_HEADLESS === "true", // visible por default (mejor render del QR)
   qrTimeout: 0, // no expira mientras esperás el escaneo
-  authTimeout: 0,
-  restartOnCrash: start,
+  authTimeout: 60, // más margen para que cargue WhatsApp Web
   cacheEnabled: false,
-  useChrome: false, // usa el Chromium que baja puppeteer
+  useChrome: true, // usa Chrome instalado (mejor soporte Multi-Device)
+  executablePath: CHROME_PATH,
+  killProcessOnBrowserClose: false,
+  disableSpins: true,
+  qrLogSkip: false,
 })
   .then(start)
   .catch((e) => {
