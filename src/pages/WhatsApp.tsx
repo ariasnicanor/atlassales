@@ -20,6 +20,7 @@ import {
   Info,
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
@@ -203,7 +204,7 @@ function WaAvatar({ name, size = 40 }: { name: string; size?: number }) {
 }
 
 export default function WhatsAppPage() {
-  const { leads, createLead, updateLead, addInteraction } = useData();
+  const { leads, products, createLead, updateLead, addInteraction } = useData();
   const { currentUser } = useSession();
   const { toast } = useToast();
 
@@ -220,6 +221,10 @@ export default function WhatsAppPage() {
   const [search, setSearch] = useState("");
   const [note, setNote] = useState("");
   const [showInfo, setShowInfo] = useState(false);
+  // Formulario "crear lead desde el chat".
+  const [newFirstName, setNewFirstName] = useState("");
+  const [newLastName, setNewLastName] = useState("");
+  const [newProduct, setNewProduct] = useState("");
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Index de leads por teléfono (real-time: se recalcula al mutar store).
@@ -284,6 +289,21 @@ export default function WhatsAppPage() {
   useEffect(() => {
     if (scrollRef.current) scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
   }, [activePhone, messagesByChat]);
+
+  // Prellenar el formulario de nuevo lead con el nombre de WhatsApp al cambiar de chat.
+  useEffect(() => {
+    const chat = chats.find((c) => c.id === activePhone);
+    // Prellenar solo si hay un nombre real (no cuando el "nombre" es el teléfono).
+    const waName =
+      chat?.name && normalizePhone(chat.name) !== chat.phone && chat.name !== chat.phone
+        ? chat.name
+        : "";
+    const parts = waName.split(" ").filter(Boolean);
+    setNewFirstName(parts[0] ?? "");
+    setNewLastName(parts.slice(1).join(" "));
+    setNewProduct("");
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activePhone]);
 
   const activeChat = chats.find((c) => c.id === activePhone) ?? null;
   const activeMessages = activePhone ? (messagesByChat[activePhone] ?? []) : [];
@@ -367,13 +387,17 @@ export default function WhatsAppPage() {
 
   const createFromChat = () => {
     if (!activePhone || !activeChat) return;
+    const fullName =
+      [newFirstName.trim(), newLastName.trim()].filter(Boolean).join(" ") ||
+      `Contacto WhatsApp ${activePhone.slice(-4)}`;
     const lastText = activeMessages[activeMessages.length - 1]?.text ?? "";
     const lead = createLead({
-      name: `Contacto WhatsApp ${activePhone.slice(-4)}`,
+      name: fullName,
       phone: activePhone,
       source: "WhatsApp",
       status: "nuevo",
       temperature: "tibio",
+      product_interest: newProduct || null,
       notes: lastText ? `Primer mensaje: ${lastText}` : null,
     });
     // Registrar los mensajes previos entrantes como historial.
@@ -387,7 +411,7 @@ export default function WhatsAppPage() {
         });
       }
     }
-    toast("Lead creado desde WhatsApp");
+    toast(`Lead creado: ${fullName}`);
   };
 
   const openChat = (id: string) => {
@@ -743,11 +767,50 @@ export default function WhatsAppPage() {
                 <div className="space-y-3">
                   <div className="rounded-lg border border-dashed p-4 text-center">
                     <UserPlus className="mx-auto mb-2 size-8 text-muted-foreground" />
-                    <p className="text-sm font-medium">Número sin lead vinculado</p>
+                    <p className="text-sm font-medium">Crear lead desde este chat</p>
                     <p className="text-xs text-muted-foreground">{activeChat.phone}</p>
                   </div>
+
+                  <div className="grid grid-cols-2 gap-2">
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Nombre</label>
+                      <Input
+                        value={newFirstName}
+                        onChange={(e) => setNewFirstName(e.target.value)}
+                        placeholder="Nombre"
+                      />
+                    </div>
+                    <div className="space-y-1">
+                      <label className="text-xs font-medium text-muted-foreground">Apellido</label>
+                      <Input
+                        value={newLastName}
+                        onChange={(e) => setNewLastName(e.target.value)}
+                        placeholder="Apellido"
+                      />
+                    </div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <label className="text-xs font-medium text-muted-foreground">
+                      Interesado en
+                    </label>
+                    <Select value={newProduct} onChange={(e) => setNewProduct(e.target.value)}>
+                      <option value="">Sin especificar</option>
+                      {products.map((p) => {
+                        const label = p.name.toLowerCase().startsWith(p.brand.toLowerCase())
+                          ? p.name
+                          : `${p.brand} ${p.name}`;
+                        return (
+                          <option key={p.id} value={label}>
+                            {label}
+                          </option>
+                        );
+                      })}
+                    </Select>
+                  </div>
+
                   <Button className="w-full" onClick={createFromChat}>
-                    <UserPlus className="size-4" /> Crear lead desde este chat
+                    <UserPlus className="size-4" /> Crear lead
                   </Button>
                   <p className="text-xs text-muted-foreground">
                     Se cargará con origen "WhatsApp" y los mensajes previos quedarán como historial
