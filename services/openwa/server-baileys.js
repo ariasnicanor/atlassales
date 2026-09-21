@@ -157,27 +157,52 @@ async function start() {
     );
     if (type !== "notify" && type !== "append") return;
     for (const msg of messages) {
-      const jid = msg.key?.remoteJid ?? "";
-      if (!jid.endsWith("@s.whatsapp.net")) continue; // solo chats individuales
+      const rawJid = msg.key?.remoteJid ?? "";
+      // Ignorar estados, grupos y newsletters (solo chats 1-a-1).
+      if (
+        rawJid === "status@broadcast" ||
+        rawJid.endsWith("@g.us") ||
+        rawJid.endsWith("@newsletter") ||
+        rawJid.endsWith("@broadcast")
+      ) {
+        continue;
+      }
+      // WhatsApp migró a "LID": el JID puede venir como <id>@lid y el número
+      // real llega en remoteJidAlt. Preferimos el número cuando esté disponible.
+      const altJid = msg.key?.remoteJidAlt ?? "";
+      const pnJid = altJid.endsWith("@s.whatsapp.net")
+        ? altJid
+        : rawJid.endsWith("@s.whatsapp.net")
+          ? rawJid
+          : "";
+      // chatId: número real si lo tenemos; si sólo hay LID, usamos el LID como id estable.
+      const chatId = pnJid ? fromJid(pnJid) : fromJid(rawJid);
+      if (!chatId) continue;
+
       const text =
         msg.message?.conversation ??
         msg.message?.extendedTextMessage?.text ??
         msg.message?.imageMessage?.caption ??
+        msg.message?.videoMessage?.caption ??
         "";
-      const chatId = fromJid(jid);
+      if (!text) continue; // por ahora sólo texto (ignora reacciones, recibos, etc.)
+
       const at = msg.messageTimestamp
         ? new Date(Number(msg.messageTimestamp) * 1000).toISOString()
         : new Date().toISOString();
+
+      console.log(
+        `[baileys] msg ${msg.key?.fromMe ? "→" : "←"} chat=${chatId} raw=${rawJid} alt=${altJid || "-"}: ${text.slice(0, 40)}`,
+      );
+
       if (msg.key?.fromMe) {
         recordMessage({ id: msg.key.id, chatId, from: "me", text, at, status: "sent" });
       } else {
         const m = { id: msg.key.id, chatId, from: "them", text, at };
         pushInbound(m);
         recordMessage(m);
-        if (msg.pushName) {
-          const c = chats.get(chatId);
-          if (c) c.name = msg.pushName;
-        }
+        const c = chats.get(chatId);
+        if (c && msg.pushName) c.name = msg.pushName;
       }
     }
   });
