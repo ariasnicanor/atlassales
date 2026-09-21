@@ -11,17 +11,16 @@ import {
   Check,
   CheckCheck,
   ArrowLeft,
-  Wifi,
-  WifiOff,
   QrCode,
   Loader2,
+  X,
+  Smile,
+  Paperclip,
+  MoreVertical,
+  Info,
 } from "lucide-react";
-import { PageHeader } from "@/components/layout/PageHeader";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Avatar } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Select } from "@/components/ui/select";
 import { LeadStatusBadge } from "@/components/commercial/StatusBadges";
@@ -136,34 +135,29 @@ function touchChats(chats: WaChat[], m: WaMessage, fallbackName?: string): WaCha
   ];
 }
 
-/** Banner de estado de conexión del proveedor (incluye QR para OpenWA). */
-function ConnectionBanner({ status }: { status: WaProviderStatus | null }) {
-  if (!status) return null;
-  if (status.provider === "mock") return null; // el demo no necesita banner ruidoso
+/** Hora corta estilo WhatsApp (HH:MM). */
+function shortTime(at?: string | null) {
+  if (!at) return "";
+  return new Date(at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+}
 
-  const tone =
-    status.state === "connected"
-      ? "border-emerald-500/30 bg-emerald-500/10 text-emerald-700 dark:text-emerald-300"
-      : status.state === "qr"
-        ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
-        : status.state === "connecting"
-          ? "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300"
-          : "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300";
-
-  const Icon =
-    status.state === "connected"
-      ? Wifi
-      : status.state === "qr"
-        ? QrCode
-        : status.state === "connecting"
-          ? Loader2
-          : WifiOff;
+/** Chip/panel de estado de conexión. Muestra el QR cuando hay que vincular. */
+function ConnectionBar({ status }: { status: WaProviderStatus | null }) {
+  if (!status || status.provider === "mock") return null;
+  if (status.state === "connected") return null;
 
   const qrSrc = status.qr
     ? status.qr.startsWith("data:")
       ? status.qr
       : `data:image/png;base64,${status.qr}`
     : null;
+
+  const tone =
+    status.state === "qr"
+      ? "border-amber-500/30 bg-amber-500/10 text-amber-700 dark:text-amber-300"
+      : status.state === "connecting"
+        ? "border-blue-500/30 bg-blue-500/10 text-blue-700 dark:text-blue-300"
+        : "border-red-500/30 bg-red-500/10 text-red-700 dark:text-red-300";
 
   return (
     <div
@@ -173,7 +167,11 @@ function ConnectionBanner({ status }: { status: WaProviderStatus | null }) {
       )}
     >
       <div className="flex items-center gap-2">
-        <Icon className={cn("size-4 shrink-0", status.state === "connecting" && "animate-spin")} />
+        {status.state === "connecting" ? (
+          <Loader2 className="size-4 shrink-0 animate-spin" />
+        ) : (
+          <QrCode className="size-4 shrink-0" />
+        )}
         <span className="font-medium">{status.label}</span>
       </div>
       {status.state === "qr" && qrSrc && (
@@ -184,10 +182,22 @@ function ConnectionBanner({ status }: { status: WaProviderStatus | null }) {
             className="size-28 rounded bg-white p-1"
           />
           <p className="text-xs opacity-80">
-            Abrí WhatsApp en tu teléfono → Dispositivos vinculados → Vincular dispositivo.
+            WhatsApp → Dispositivos vinculados → Vincular dispositivo.
           </p>
         </div>
       )}
+    </div>
+  );
+}
+
+/** Avatar redondo estilo WhatsApp. */
+function WaAvatar({ name, size = 40 }: { name: string; size?: number }) {
+  return (
+    <div
+      className="flex shrink-0 items-center justify-center rounded-full bg-[#dfe5e7] font-medium text-[#54656f] dark:bg-[#6a7175] dark:text-[#cfd4d6]"
+      style={{ width: size, height: size, fontSize: size * 0.38 }}
+    >
+      {initials(name)}
     </div>
   );
 }
@@ -209,6 +219,7 @@ export default function WhatsAppPage() {
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [note, setNote] = useState("");
+  const [showInfo, setShowInfo] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
 
   // Index de leads por teléfono (real-time: se recalcula al mutar store).
@@ -379,283 +390,374 @@ export default function WhatsAppPage() {
     toast("Lead creado desde WhatsApp");
   };
 
-  const description =
-    providerId === "mock"
-      ? "Gestioná leads sin salir del chat. La conversación es simulada; cambiá a OpenWA o a la API oficial sin tocar el CRM."
-      : providerId === "openwa"
-        ? "Conectado vía OpenWA (WhatsApp Web). Los mensajes son reales."
-        : "Conectado vía WhatsApp Cloud API (Meta).";
+  const openChat = (id: string) => {
+    setActivePhone(id);
+    setShowInfo(false);
+  };
+
+  const headerTitle = activeLead?.name ?? activeChat?.name ?? activeChat?.phone ?? "";
 
   return (
-    <div className="space-y-4">
-      <PageHeader title="WhatsApp" description={description} />
+    <div className="flex flex-col gap-3">
+      <ConnectionBar status={status} />
 
-      <ConnectionBanner status={status} />
+      {/* Contenedor tipo WhatsApp Web */}
+      <div className="flex h-[calc(100dvh-8.5rem)] min-h-[520px] overflow-hidden rounded-xl border border-black/10 bg-white shadow-sm dark:border-white/10 dark:bg-[#111b21]">
+        {/* ── Panel lista de chats ── */}
+        <aside
+          className={cn(
+            "flex w-full flex-col border-r border-black/10 bg-white dark:border-white/10 dark:bg-[#111b21] md:w-[360px]",
+            activeChat && "hidden md:flex",
+          )}
+        >
+          {/* Header del panel: estado de conexión */}
+          <div className="flex items-center justify-between gap-2 bg-[#f0f2f5] px-4 py-3 dark:bg-[#202c33]">
+            <div className="flex items-center gap-2">
+              <MessageCircle className="size-5 text-[#008069] dark:text-[#00a884]" />
+              <span className="font-semibold text-[#111b21] dark:text-[#e9edef]">Chats</span>
+            </div>
+            {status && (
+              <span
+                className={cn(
+                  "flex items-center gap-1.5 rounded-full px-2 py-0.5 text-[11px] font-medium",
+                  status.state === "connected"
+                    ? "bg-[#008069]/10 text-[#008069] dark:bg-[#00a884]/15 dark:text-[#00a884]"
+                    : "bg-amber-500/10 text-amber-600 dark:text-amber-400",
+                )}
+                title={status.label}
+              >
+                <span
+                  className={cn(
+                    "size-2 rounded-full",
+                    status.state === "connected"
+                      ? "bg-[#008069] dark:bg-[#00a884]"
+                      : "bg-amber-500",
+                  )}
+                />
+                {providerId === "mock"
+                  ? "Demo"
+                  : status.state === "connected"
+                    ? "En línea"
+                    : status.state === "qr"
+                      ? "Vincular"
+                      : "…"}
+              </span>
+            )}
+          </div>
 
-      <div className="grid gap-4 lg:grid-cols-[280px_minmax(0,1fr)_320px]">
-        {/* Lista de conversaciones */}
-        <Card className={cn("h-[70vh]", activeChat && "hidden lg:block")}>
-          <CardContent className="flex h-full flex-col gap-3 p-3">
-            <div className="relative">
-              <Search className="pointer-events-none absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
-              <Input
-                placeholder="Buscar chat..."
+          {/* Buscador */}
+          <div className="bg-white px-3 py-2 dark:bg-[#111b21]">
+            <div className="flex items-center gap-3 rounded-lg bg-[#f0f2f5] px-3 py-1.5 dark:bg-[#202c33]">
+              <Search className="size-4 text-[#54656f] dark:text-[#8696a0]" />
+              <input
+                placeholder="Buscar un chat"
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
-                className="pl-9"
+                className="w-full bg-transparent text-sm text-[#111b21] outline-none placeholder:text-[#8696a0] dark:text-[#e9edef]"
               />
             </div>
-            <div className="flex-1 space-y-1 overflow-y-auto scrollbar-thin">
-              {filtered.length === 0 && (
-                <p className="px-2 py-6 text-center text-xs text-muted-foreground">
-                  No hay conversaciones todavía.
-                </p>
-              )}
-              {filtered.map((c) => {
-                const lead = leadByPhone.get(c.id);
-                const label = lead?.name ?? c.name ?? c.phone;
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => setActivePhone(c.id)}
-                    className={cn(
-                      "flex w-full items-center gap-3 rounded-lg px-2 py-2 text-left transition-colors",
-                      activePhone === c.id ? "bg-primary/10" : "hover:bg-accent",
-                    )}
-                  >
-                    <Avatar name={label} />
-                    <div className="min-w-0 flex-1">
-                      <div className="flex items-center justify-between gap-2">
-                        <p className="truncate text-sm font-medium">{label}</p>
-                        {!lead && (
-                          <Badge variant="outline" className="shrink-0 text-[10px]">
-                            Sin lead
-                          </Badge>
-                        )}
-                      </div>
-                      <p className="truncate text-xs text-muted-foreground">
+          </div>
+
+          {/* Lista */}
+          <div className="flex-1 overflow-y-auto scrollbar-thin">
+            {filtered.length === 0 && (
+              <p className="px-4 py-8 text-center text-sm text-[#8696a0]">
+                No hay conversaciones todavía.
+              </p>
+            )}
+            {filtered.map((c) => {
+              const lead = leadByPhone.get(c.id);
+              const label = lead?.name ?? c.name ?? c.phone;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => openChat(c.id)}
+                  className={cn(
+                    "flex w-full items-center gap-3 px-3 py-2.5 text-left transition-colors",
+                    activePhone === c.id
+                      ? "bg-[#f0f2f5] dark:bg-[#2a3942]"
+                      : "hover:bg-[#f5f6f6] dark:hover:bg-[#202c33]",
+                  )}
+                >
+                  <WaAvatar name={label} size={49} />
+                  <div className="min-w-0 flex-1 border-b border-black/5 pb-2.5 dark:border-white/5">
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-[15px] font-medium text-[#111b21] dark:text-[#e9edef]">
+                        {label}
+                      </p>
+                      <span className="shrink-0 text-[11px] text-[#667781] dark:text-[#8696a0]">
+                        {shortTime(c.lastAt)}
+                      </span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <p className="truncate text-[13px] text-[#667781] dark:text-[#8696a0]">
                         {c.lastMessage ?? "Sin mensajes"}
                       </p>
+                      {!lead && (
+                        <Badge
+                          variant="outline"
+                          className="shrink-0 border-[#008069]/30 text-[9px] text-[#008069] dark:text-[#00a884]"
+                        >
+                          Sin lead
+                        </Badge>
+                      )}
                     </div>
-                  </button>
-                );
-              })}
-            </div>
-          </CardContent>
-        </Card>
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        </aside>
 
-        {/* Chat */}
-        <Card className={cn("h-[70vh]", !activeChat && "hidden lg:block")}>
-          <CardContent className="flex h-full flex-col p-0">
-            {activeChat ? (
-              <>
-                <div className="flex items-center gap-3 border-b p-3">
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="lg:hidden"
-                    onClick={() => setActivePhone(null)}
-                    aria-label="Volver a chats"
-                  >
-                    <ArrowLeft className="size-4" />
-                  </Button>
-                  <Avatar name={activeLead?.name ?? activeChat.name ?? activeChat.phone} />
+        {/* ── Panel de conversación ── */}
+        <section
+          className={cn(
+            "relative flex flex-1 flex-col bg-[#efeae2] dark:bg-[#0b141a]",
+            !activeChat && "hidden md:flex",
+          )}
+          style={{
+            backgroundImage:
+              "url(\"data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='40' height='40' viewBox='0 0 40 40'%3E%3Cg fill='%23000000' fill-opacity='0.02'%3E%3Cpath d='M20 20c0-5.5-4.5-10-10-10S0 14.5 0 20s4.5 10 10 10 10-4.5 10-10zm10 0c0-5.5-4.5-10-10-10s-10 4.5-10 10 4.5 10 10 10 10-4.5 10-10z'/%3E%3C/g%3E%3C/svg%3E\")",
+          }}
+        >
+          {activeChat ? (
+            <>
+              {/* Header del chat */}
+              <div className="flex items-center gap-3 bg-[#f0f2f5] px-4 py-2 dark:bg-[#202c33]">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  className="md:hidden"
+                  onClick={() => setActivePhone(null)}
+                  aria-label="Volver"
+                >
+                  <ArrowLeft className="size-5" />
+                </Button>
+                <button
+                  className="flex min-w-0 flex-1 items-center gap-3 text-left"
+                  onClick={() => setShowInfo(true)}
+                >
+                  <WaAvatar name={headerTitle} size={40} />
                   <div className="min-w-0 flex-1">
-                    <p className="truncate font-medium">
-                      {activeLead?.name ?? activeChat.name ?? activeChat.phone}
+                    <p className="truncate text-[15px] font-medium text-[#111b21] dark:text-[#e9edef]">
+                      {headerTitle}
                     </p>
-                    <p className="flex items-center gap-1 truncate text-xs text-muted-foreground">
-                      <Phone className="size-3" /> {activeChat.phone}
+                    <p className="truncate text-[12px] text-[#667781] dark:text-[#8696a0]">
+                      {activeChat.phone}
                     </p>
                   </div>
-                  {activeLead && <LeadStatusBadge status={activeLead.status} />}
-                </div>
-
-                <div
-                  ref={scrollRef}
-                  className="flex-1 space-y-2 overflow-y-auto bg-muted/30 p-4 scrollbar-thin"
+                </button>
+                {activeLead && <LeadStatusBadge status={activeLead.status} />}
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => setShowInfo((v) => !v)}
+                  aria-label="Datos del contacto"
+                  title="Datos del contacto"
                 >
-                  {activeMessages.map((m) => (
-                    <div
-                      key={m.id}
-                      className={cn("flex", m.from === "me" ? "justify-end" : "justify-start")}
-                    >
+                  <Info className="size-5 text-[#54656f] dark:text-[#aebac1]" />
+                </Button>
+                <MoreVertical className="hidden size-5 text-[#54656f] dark:text-[#aebac1] sm:block" />
+              </div>
+
+              {/* Mensajes */}
+              <div
+                ref={scrollRef}
+                className="flex-1 space-y-1.5 overflow-y-auto px-4 py-4 scrollbar-thin sm:px-[8%]"
+              >
+                {activeMessages.map((m) => {
+                  const mine = m.from === "me";
+                  return (
+                    <div key={m.id} className={cn("flex", mine ? "justify-end" : "justify-start")}>
                       <div
                         className={cn(
-                          "max-w-[80%] rounded-lg px-3 py-2 text-sm shadow-sm",
-                          m.from === "me" ? "bg-primary text-primary-foreground" : "bg-card",
+                          "relative max-w-[75%] rounded-lg px-2.5 py-1.5 text-[14px] shadow-sm",
+                          mine
+                            ? "bg-[#d9fdd3] text-[#111b21] dark:bg-[#005c4b] dark:text-[#e9edef]"
+                            : "bg-white text-[#111b21] dark:bg-[#202c33] dark:text-[#e9edef]",
                         )}
                       >
-                        <p className="whitespace-pre-wrap break-words">{m.text}</p>
-                        <div
-                          className={cn(
-                            "mt-1 flex items-center justify-end gap-1 text-[10px]",
-                            m.from === "me"
-                              ? "text-primary-foreground/80"
-                              : "text-muted-foreground",
-                          )}
-                        >
-                          {new Date(m.at).toLocaleTimeString("es-AR", {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                          {m.from === "me" &&
-                            (m.status === "read" || m.status === "delivered" ? (
-                              <CheckCheck className="size-3" />
+                        <p className="whitespace-pre-wrap break-words pr-12">{m.text}</p>
+                        <span className="float-right -mb-1 ml-2 mt-1 flex items-center gap-1 text-[10px] text-[#667781] dark:text-[#8696a0]">
+                          {shortTime(m.at)}
+                          {mine &&
+                            (m.status === "read" ? (
+                              <CheckCheck className="size-3.5 text-[#53bdeb]" />
+                            ) : m.status === "delivered" ? (
+                              <CheckCheck className="size-3.5" />
                             ) : (
-                              <Check className="size-3" />
+                              <Check className="size-3.5" />
                             ))}
-                        </div>
+                        </span>
                       </div>
                     </div>
-                  ))}
-                </div>
+                  );
+                })}
+              </div>
 
-                <div className="border-t p-3">
-                  <div className="flex items-end gap-2">
-                    <Textarea
-                      value={draft}
-                      onChange={(e) => setDraft(e.target.value)}
-                      onKeyDown={(e) => {
-                        if (e.key === "Enter" && !e.shiftKey) {
-                          e.preventDefault();
-                          void sendMessage();
-                        }
-                      }}
-                      rows={1}
-                      placeholder="Escribí un mensaje..."
-                      className="min-h-11 resize-none"
-                    />
-                    <Button
-                      onClick={() => void sendMessage()}
-                      size="icon"
-                      disabled={!draft.trim()}
-                      aria-label="Enviar"
-                      className="size-11 shrink-0"
-                    >
-                      <Send className="size-4" />
+              {/* Barra de entrada */}
+              <div className="flex items-end gap-2 bg-[#f0f2f5] px-4 py-2.5 dark:bg-[#202c33]">
+                <Smile className="mb-2 size-6 shrink-0 text-[#54656f] dark:text-[#8696a0]" />
+                <Paperclip className="mb-2 size-6 shrink-0 text-[#54656f] dark:text-[#8696a0]" />
+                <Textarea
+                  value={draft}
+                  onChange={(e) => setDraft(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      void sendMessage();
+                    }
+                  }}
+                  rows={1}
+                  placeholder="Escribí un mensaje"
+                  className="min-h-10 resize-none rounded-lg border-0 bg-white text-[14px] shadow-none focus-visible:ring-0 dark:bg-[#2a3942]"
+                />
+                <Button
+                  onClick={() => void sendMessage()}
+                  size="icon"
+                  disabled={!draft.trim()}
+                  aria-label="Enviar"
+                  className="size-10 shrink-0 rounded-full bg-[#008069] hover:bg-[#017561] dark:bg-[#00a884] dark:hover:bg-[#06cf9c]"
+                >
+                  <Send className="size-4" />
+                </Button>
+              </div>
+            </>
+          ) : (
+            <div className="flex flex-1 flex-col items-center justify-center gap-3 p-8 text-center">
+              <div className="flex size-20 items-center justify-center rounded-full bg-[#dfe5e7] dark:bg-[#202c33]">
+                <MessageCircle className="size-10 text-[#54656f] dark:text-[#8696a0]" />
+              </div>
+              <p className="text-lg font-light text-[#41525d] dark:text-[#e9edef]">
+                Atlas Sales · WhatsApp
+              </p>
+              <p className="max-w-sm text-sm text-[#667781] dark:text-[#8696a0]">
+                Elegí una conversación para gestionar leads sin salir del chat.
+              </p>
+            </div>
+          )}
+        </section>
+
+        {/* ── Panel info del contacto (gestión CRM) ── */}
+        {activeChat && showInfo && (
+          <aside className="absolute inset-0 z-10 flex flex-col border-l border-black/10 bg-white dark:border-white/10 dark:bg-[#111b21] md:static md:z-0 md:w-[380px]">
+            <div className="flex items-center gap-4 bg-[#f0f2f5] px-4 py-3.5 dark:bg-[#202c33]">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setShowInfo(false)}
+                aria-label="Cerrar"
+              >
+                <X className="size-5" />
+              </Button>
+              <span className="font-medium text-[#111b21] dark:text-[#e9edef]">
+                Datos del contacto
+              </span>
+            </div>
+
+            <div className="flex flex-col items-center gap-1 border-b border-black/5 bg-white px-4 py-6 dark:border-white/5 dark:bg-[#111b21]">
+              <WaAvatar name={headerTitle} size={96} />
+              <p className="mt-2 text-lg font-medium text-[#111b21] dark:text-[#e9edef]">
+                {headerTitle}
+              </p>
+              <p className="flex items-center gap-1 text-sm text-[#667781] dark:text-[#8696a0]">
+                <Phone className="size-3.5" /> {activeChat.phone}
+              </p>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4 scrollbar-thin">
+              {activeLead ? (
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <span className="text-xs font-semibold uppercase tracking-wide text-[#008069] dark:text-[#00a884]">
+                      Lead en el CRM
+                    </span>
+                    <Button asChild variant="ghost" size="sm" className="h-7 gap-1 text-xs">
+                      <Link to={`/leads/${activeLead.id}`}>
+                        Abrir <ExternalLink className="size-3.5" />
+                      </Link>
                     </Button>
                   </div>
-                  {!activeLead && (
-                    <p className="mt-2 text-xs text-muted-foreground">
-                      Creá el lead desde el panel para que la conversación cuente como gestión.
-                    </p>
-                  )}
-                </div>
-              </>
-            ) : (
-              <div className="flex flex-1 items-center justify-center p-8 text-center text-sm text-muted-foreground">
-                <div className="space-y-2">
-                  <MessageCircle className="mx-auto size-10 opacity-40" />
-                  <p>Elegí una conversación para empezar.</p>
-                </div>
-              </div>
-            )}
-          </CardContent>
-        </Card>
 
-        {/* Panel del lead */}
-        <Card className={cn("h-[70vh]", !activeChat && "hidden lg:block")}>
-          <CardContent className="flex h-full flex-col gap-4 overflow-y-auto p-4 scrollbar-thin">
-            {!activeChat ? (
-              <p className="text-sm text-muted-foreground">Sin conversación seleccionada.</p>
-            ) : activeLead ? (
-              <>
-                <div className="flex items-center gap-3">
-                  <Avatar name={activeLead.name}>
-                    <span className="text-sm font-semibold">{initials(activeLead.name)}</span>
-                  </Avatar>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate font-semibold">{activeLead.name}</p>
-                    <p className="truncate text-xs text-muted-foreground">
-                      {activeLead.source} · {activeLead.temperature}
-                    </p>
-                  </div>
-                  <Button asChild variant="ghost" size="icon" aria-label="Abrir en CRM">
-                    <Link to={`/leads/${activeLead.id}`}>
-                      <ExternalLink className="size-4" />
-                    </Link>
-                  </Button>
-                </div>
+                  {(() => {
+                    const d = daysWithoutManagement(activeLead);
+                    const s = stalenessInfo(d);
+                    return (
+                      <div
+                        className={cn(
+                          "flex items-center gap-2 rounded-md border p-2 text-xs",
+                          s.className,
+                        )}
+                      >
+                        <span className={cn("size-2 rounded-full", s.dotClass)} />
+                        {s.label}
+                      </div>
+                    );
+                  })()}
 
-                {(() => {
-                  const d = daysWithoutManagement(activeLead);
-                  const s = stalenessInfo(d);
-                  return (
-                    <div
-                      className={cn(
-                        "flex items-center gap-2 rounded-md border p-2 text-xs",
-                        s.className,
-                      )}
+                  <div className="space-y-1.5">
+                    <label className="text-xs font-medium text-muted-foreground">Estado</label>
+                    <Select
+                      value={activeLead.status}
+                      onChange={(e) => changeStatus(e.target.value as LeadStatus)}
                     >
-                      <span className={cn("size-2 rounded-full", s.dotClass)} />
-                      {s.label}
-                    </div>
-                  );
-                })()}
-
-                <div className="space-y-1.5">
-                  <label className="text-xs font-medium text-muted-foreground">Estado</label>
-                  <Select
-                    value={activeLead.status}
-                    onChange={(e) => changeStatus(e.target.value as LeadStatus)}
-                  >
-                    {[
-                      ...OPEN_PIPELINE,
-                      "vendido",
-                      ...CLOSED_STATUSES.filter((s) => s !== "vendido"),
-                    ].map((s) => (
-                      <option key={s} value={s}>
-                        {LEAD_STATUS_LABEL[s as LeadStatus]}
-                      </option>
-                    ))}
-                  </Select>
-                </div>
-
-                {activeLead.product_interest && (
-                  <div>
-                    <p className="text-xs font-medium text-muted-foreground">Interés</p>
-                    <p className="text-sm">{activeLead.product_interest}</p>
+                      {[
+                        ...OPEN_PIPELINE,
+                        "vendido",
+                        ...CLOSED_STATUSES.filter((s) => s !== "vendido"),
+                      ].map((s) => (
+                        <option key={s} value={s}>
+                          {LEAD_STATUS_LABEL[s as LeadStatus]}
+                        </option>
+                      ))}
+                    </Select>
                   </div>
-                )}
 
-                <div className="space-y-2">
-                  <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
-                    <StickyNote className="size-3.5" /> Nueva nota
-                  </label>
-                  <Textarea
-                    value={note}
-                    onChange={(e) => setNote(e.target.value)}
-                    rows={3}
-                    placeholder="Ej.: cliente pide llamada mañana 10hs"
-                  />
-                  <Button onClick={saveNote} disabled={!note.trim()} className="w-full" size="sm">
-                    Guardar nota y registrar gestión
+                  {activeLead.product_interest && (
+                    <div>
+                      <p className="text-xs font-medium text-muted-foreground">Interés</p>
+                      <p className="text-sm">{activeLead.product_interest}</p>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className="flex items-center gap-1.5 text-xs font-medium text-muted-foreground">
+                      <StickyNote className="size-3.5" /> Nueva nota
+                    </label>
+                    <Textarea
+                      value={note}
+                      onChange={(e) => setNote(e.target.value)}
+                      rows={3}
+                      placeholder="Ej.: cliente pide llamada mañana 10hs"
+                    />
+                    <Button onClick={saveNote} disabled={!note.trim()} className="w-full" size="sm">
+                      Guardar nota y registrar gestión
+                    </Button>
+                  </div>
+
+                  <Button variant="outline" size="sm" className="w-full" onClick={logManagement}>
+                    Marcar como gestionado ahora
                   </Button>
                 </div>
-
-                <Button variant="outline" size="sm" onClick={logManagement}>
-                  Marcar como gestionado ahora
-                </Button>
-              </>
-            ) : (
-              <div className="space-y-3">
-                <div className="rounded-lg border border-dashed p-4 text-center">
-                  <UserPlus className="mx-auto mb-2 size-8 text-muted-foreground" />
-                  <p className="text-sm font-medium">Número sin lead vinculado</p>
-                  <p className="text-xs text-muted-foreground">{activeChat.phone}</p>
+              ) : (
+                <div className="space-y-3">
+                  <div className="rounded-lg border border-dashed p-4 text-center">
+                    <UserPlus className="mx-auto mb-2 size-8 text-muted-foreground" />
+                    <p className="text-sm font-medium">Número sin lead vinculado</p>
+                    <p className="text-xs text-muted-foreground">{activeChat.phone}</p>
+                  </div>
+                  <Button className="w-full" onClick={createFromChat}>
+                    <UserPlus className="size-4" /> Crear lead desde este chat
+                  </Button>
+                  <p className="text-xs text-muted-foreground">
+                    Se cargará con origen "WhatsApp" y los mensajes previos quedarán como historial
+                    de gestión.
+                  </p>
                 </div>
-                <Button className="w-full" onClick={createFromChat}>
-                  <UserPlus className="size-4" /> Crear lead desde este chat
-                </Button>
-                <p className="text-xs text-muted-foreground">
-                  Se cargará con origen "WhatsApp" y los mensajes previos quedarán como historial de
-                  gestión.
-                </p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
+              )}
+            </div>
+          </aside>
+        )}
       </div>
     </div>
   );
