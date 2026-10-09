@@ -2,21 +2,25 @@
 //
 // Arquitectura (desacoplada, 100% serverless → corre con el CRM en Vercel):
 //
-//   Meta Cloud API ──webhook──► Supabase Edge Function `wa-webhook`
-//                                   │ guarda en tablas wa_chats / wa_messages
-//                                   ▼
-//   CRM (este provider) ──REST (anon key)── lee chats y mensajes de Supabase
+//   Meta Cloud API ──webhook──► Edge Function `wa-webhook` ──► wa_chats / wa_messages
+//                                                                  ▲
+//   CRM (este provider) ──GET  x-atlas-secret──► Edge Function `wa-inbox` ──┘ (lee, service role)
 //   CRM ──POST x-atlas-secret──► Edge Function `wa-send` ──Graph API──► Meta
 //
-// El token de Meta vive SOLO como secreto en la Edge Function (nunca en el
-// front). El front usa la anon key pública de Supabase + un shared secret
-// para el envío.
+// Seguridad (Grupo A):
+//   - El token de Meta vive SOLO como secreto en las Edge Functions.
+//   - Las tablas tienen RLS y NO son legibles con la anon key: todo el acceso
+//     del front pasa por wa-inbox / wa-send (service role interno) con un
+//     shared secret y rate limiting por IP.
+//   - El shared secret es ofuscación, no autenticación de usuario: la defensa
+//     real contra abuso es el rate limiting + el tope de gasto en Meta. La
+//     protección por-usuario llega con Supabase Auth.
 //
 // Variables (VITE_, públicas) que consume:
-//   VITE_SUPABASE_URL        https://<ref>.supabase.co
-//   VITE_SUPABASE_ANON_KEY   sb_publishable_... (o anon JWT)
-//   VITE_WA_SEND_URL         <supabase_url>/functions/v1/wa-send  (opcional; se deriva)
-//   VITE_WA_SEND_SECRET      shared secret para llamar a wa-send
+//   VITE_SUPABASE_URL      https://<ref>.supabase.co  (deriva las URLs de las funciones)
+//   VITE_WA_INBOX_URL      opcional; si no, se deriva de SUPABASE_URL
+//   VITE_WA_SEND_URL       opcional; si no, se deriva de SUPABASE_URL
+//   VITE_WA_SEND_SECRET    shared secret para llamar a wa-inbox / wa-send
 
 import type {
   SendResult,
@@ -30,7 +34,9 @@ import type {
 
 const SUPABASE_URL =
   (import.meta.env.VITE_SUPABASE_URL as string | undefined)?.replace(/\/$/, "") ?? "";
-const ANON_KEY = (import.meta.env.VITE_SUPABASE_ANON_KEY as string | undefined) ?? "";
+const INBOX_URL =
+  (import.meta.env.VITE_WA_INBOX_URL as string | undefined) ??
+  (SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/wa-inbox` : "");
 const SEND_URL =
   (import.meta.env.VITE_WA_SEND_URL as string | undefined) ??
   (SUPABASE_URL ? `${SUPABASE_URL}/functions/v1/wa-send` : "");
@@ -70,16 +76,18 @@ export class CloudApiProvider implements WhatsAppProvider {
   private started = false;
 
   private get configured() {
-    return Boolean(SUPABASE_URL && ANON_KEY);
+    return Boolean(INBOX_URL && SEND_SECRET);
   }
 
-  private headers(): HeadersInit {
-    return { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` };
+  private authHeaders(): HeadersInit {
+    return SEND_SECRET ? { "x-atlas-secret": SEND_SECRET } : {};
   }
 
-  private async rest<T>(path: string): Promise<T> {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, { headers: this.headers() });
-    if (!res.ok) throw new Error(`Supabase REST ${path} → ${res.status}`);
+  /** GET a la Edge Function wa-inbox (lectura con service role + rate limit). */
+  private async inbox<T>(params: Record<string, string>): Promise<T> {
+    const qs = new URLSearchParams(params).toString();
+    const res = await fetch(`${INBOX_URL}?${qs}`, { headers: this.authHeaders() });
+    if (!res.ok) throw new Error(`wa-inbox → ${res.status}`);
     return (await res.json()) as T;
   }
 
@@ -115,10 +123,7 @@ export class CloudApiProvider implements WhatsAppProvider {
 
   private async pollInbound() {
     try {
-      const since = encodeURIComponent(this.lastSeen);
-      const rows = await this.rest<DbMessage[]>(
-        `wa_messages?select=*&direction=eq.in&at=gt.${since}&order=at.asc`,
-      );
+      const rows = await this.inbox<DbMessage[]>({ type: "inbound", since: this.lastSeen });
       for (const r of rows) {
         if (r.at > this.lastSeen) this.lastSeen = r.at;
         this.msgHandlers.forEach((h) => h(this.toMessage(r)));
@@ -135,7 +140,7 @@ export class CloudApiProvider implements WhatsAppProvider {
   async listChats(): Promise<WaChat[]> {
     if (!this.configured) return [];
     try {
-      const rows = await this.rest<DbChat[]>("wa_chats?select=*&order=last_at.desc.nullslast");
+      const rows = await this.inbox<DbChat[]>({ type: "chats" });
       return rows.map((c) => ({
         id: c.id,
         phone: c.phone,
@@ -152,9 +157,7 @@ export class CloudApiProvider implements WhatsAppProvider {
   async getMessages(chatId: string): Promise<WaMessage[]> {
     if (!this.configured) return [];
     try {
-      const rows = await this.rest<DbMessage[]>(
-        `wa_messages?select=*&chat_id=eq.${encodeURIComponent(chatId)}&order=at.asc`,
-      );
+      const rows = await this.inbox<DbMessage[]>({ type: "messages", chatId });
       return rows.map((m) => this.toMessage(m));
     } catch {
       return [];
@@ -168,11 +171,7 @@ export class CloudApiProvider implements WhatsAppProvider {
     try {
       const res = await fetch(SEND_URL, {
         method: "POST",
-        headers: {
-          "content-type": "application/json",
-          ...(SEND_SECRET ? { "x-atlas-secret": SEND_SECRET } : {}),
-          ...(ANON_KEY ? { apikey: ANON_KEY, Authorization: `Bearer ${ANON_KEY}` } : {}),
-        },
+        headers: { "content-type": "application/json", ...this.authHeaders() },
         body: JSON.stringify({ chatId, text }),
       });
       const data = (await res.json()) as SendResult & { error?: string };
