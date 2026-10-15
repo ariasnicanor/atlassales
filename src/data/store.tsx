@@ -61,7 +61,7 @@ function removeTaskFromGCal(taskId: string) {
   }
 }
 
-const STORAGE_KEY = "atlas-sales-os:data:v3";
+const STORAGE_KEY = "atlas-sales-os:data:v4";
 
 function loadState(): DataState {
   if (typeof window === "undefined") return buildSeedState();
@@ -85,7 +85,8 @@ function loadState(): DataState {
       parsed.leads = parsed.leads.map((l) => ({
         ...l,
         last_management_at: l.last_management_at ?? l.updated_at ?? l.created_at,
-        remarketing_since: l.remarketing_since ?? (l.status === "remarketing" ? l.updated_at : null),
+        remarketing_since:
+          l.remarketing_since ?? (l.status === "remarketing" ? l.updated_at : null),
         remarketing_reason: l.remarketing_reason ?? null,
       }));
       return parsed;
@@ -142,7 +143,7 @@ interface DataContextValue extends DataState {
   resolveRemarketingRequest: (
     id: string,
     status: "aprobada" | "rechazada",
-    note?: string | null
+    note?: string | null,
   ) => void;
   /** El vendedor cierra la venta y la deja pendiente de confirmación. */
   requestSaleConfirmation: (input: {
@@ -155,7 +156,7 @@ interface DataContextValue extends DataState {
   resolveSaleConfirmation: (
     id: string,
     status: "confirmada" | "rechazada",
-    note?: string | null
+    note?: string | null,
   ) => void;
   /** El vendedor solicita reservar una unidad de stock. */
   requestReservation: (input: {
@@ -167,7 +168,7 @@ interface DataContextValue extends DataState {
   resolveReservationRequest: (
     id: string,
     status: "aprobada" | "rechazada",
-    note?: string | null
+    note?: string | null,
   ) => void;
   /** Session pasa el usuario actual acá para que el store lo use en auditoría. */
   _setActor: (user: User | null) => void;
@@ -193,7 +194,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
     const sweep = () => {
       setState((s) => {
         const stale = s.leads.filter(
-          (l) => !NO_AUTO_SWEEP.includes(l.status) && daysWithoutManagement(l) >= AUTO_CLOSE_DAYS
+          (l) => !NO_AUTO_SWEEP.includes(l.status) && daysWithoutManagement(l) >= AUTO_CLOSE_DAYS,
         );
         if (stale.length === 0) return s;
         const staleIds = new Set(stale.map((l) => l.id));
@@ -207,7 +208,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 remarketing_reason: `Sin gestión ${AUTO_CLOSE_DAYS}+ días`,
                 updated_at: now,
               }
-            : l
+            : l,
         );
         const auditEntries: AuditLogEntry[] = stale.map((l) => ({
           id: uid("audit"),
@@ -227,26 +228,22 @@ export function DataProvider({ children }: { children: ReactNode }) {
     return () => window.clearInterval(t);
   }, []);
 
-
   const nowIso = () => new Date().toISOString();
 
-  const pushAudit = useCallback(
-    (s: DataState, entry: AuditInput): DataState => {
-      const actor = actorRef.current;
-      const record: AuditLogEntry = {
-        id: uid("audit"),
-        user_id: actor?.id ?? null,
-        user_name: actor?.name ?? "Sistema",
-        action: entry.action,
-        resource: entry.resource,
-        resource_id: entry.resource_id ?? null,
-        meta: entry.meta ?? null,
-        created_at: nowIso(),
-      };
-      return { ...s, auditLog: [record, ...s.auditLog].slice(0, 500) };
-    },
-    []
-  );
+  const pushAudit = useCallback((s: DataState, entry: AuditInput): DataState => {
+    const actor = actorRef.current;
+    const record: AuditLogEntry = {
+      id: uid("audit"),
+      user_id: actor?.id ?? null,
+      user_name: actor?.name ?? "Sistema",
+      action: entry.action,
+      resource: entry.resource,
+      resource_id: entry.resource_id ?? null,
+      meta: entry.meta ?? null,
+      created_at: nowIso(),
+    };
+    return { ...s, auditLog: [record, ...s.auditLog].slice(0, 500) };
+  }, []);
 
   const value = useMemo<DataContextValue>(() => {
     const companyId = state.company.id;
@@ -272,7 +269,8 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const lead = s.leads.find((l) => l.id === leadId);
             if (!lead) return s;
             const already = s.remarketingRequests.some(
-              (r) => r.lead_id === leadId && r.requested_by === actor.id && r.status === "pendiente"
+              (r) =>
+                r.lead_id === leadId && r.requested_by === actor.id && r.status === "pendiente",
             );
             if (already) return s;
             const req: RemarketingRequest = {
@@ -288,7 +286,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
             };
             return { ...s, remarketingRequests: [req, ...s.remarketingRequests] };
           },
-          { action: "remarketing_request", resource: "lead", resource_id: leadId, meta: note ?? null }
+          {
+            action: "remarketing_request",
+            resource: "lead",
+            resource_id: leadId,
+            meta: note ?? null,
+          },
         );
       },
 
@@ -309,7 +312,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     resolution_note: note ?? null,
                     resolved_at: now,
                   }
-                : r
+                : r,
             );
             const leads =
               status === "aprobada"
@@ -324,17 +327,20 @@ export function DataProvider({ children }: { children: ReactNode }) {
                           last_management_at: now,
                           updated_at: now,
                         }
-                      : l
+                      : l,
                   )
                 : s.leads;
             return { ...s, leads, remarketingRequests: requests };
           },
           {
-            action: status === "aprobada" ? "remarketing_request_approved" : "remarketing_request_rejected",
+            action:
+              status === "aprobada"
+                ? "remarketing_request_approved"
+                : "remarketing_request_rejected",
             resource: "lead",
             resource_id: id,
             meta: note ?? null,
-          }
+          },
         );
       },
 
@@ -348,7 +354,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const product = s.products.find((p) => p.id === product_id);
             if (!lead || !product) return s;
             const already = s.saleConfirmations.some(
-              (r) => r.lead_id === lead_id && r.status === "pendiente"
+              (r) => r.lead_id === lead_id && r.status === "pendiente",
             );
             if (already) return s;
             const req: SaleConfirmation = {
@@ -372,7 +378,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             resource: "sale",
             resource_id: lead_id,
             meta: note ?? null,
-          }
+          },
         );
       },
 
@@ -393,13 +399,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     resolution_note: note ?? null,
                     resolved_at: now,
                   }
-                : r
+                : r,
             );
             if (status !== "confirmada") return { ...s, saleConfirmations };
             const products = s.products.map((p) =>
-              p.id === req.product_id
-                ? { ...p, status: "vendido" as const, availability: 0 }
-                : p
+              p.id === req.product_id ? { ...p, status: "vendido" as const, availability: 0 } : p,
             );
             const leads = s.leads.map((l) =>
               l.id === req.lead_id
@@ -409,7 +413,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     last_management_at: now,
                     updated_at: now,
                   }
-                : l
+                : l,
             );
             return { ...s, saleConfirmations, products, leads };
           },
@@ -418,7 +422,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             resource: "sale",
             resource_id: id,
             meta: note ?? null,
-          }
+          },
         );
       },
 
@@ -431,7 +435,10 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const product = s.products.find((p) => p.id === product_id);
             if (!product) return s;
             const already = s.reservationRequests.some(
-              (r) => r.product_id === product_id && r.requested_by === actor.id && r.status === "pendiente"
+              (r) =>
+                r.product_id === product_id &&
+                r.requested_by === actor.id &&
+                r.status === "pendiente",
             );
             if (already) return s;
             const lead = lead_id ? s.leads.find((l) => l.id === lead_id) : null;
@@ -455,7 +462,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             resource: "stock",
             resource_id: product_id,
             meta: note ?? null,
-          }
+          },
         );
       },
 
@@ -476,11 +483,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
                     resolution_note: note ?? null,
                     resolved_at: now,
                   }
-                : r
+                : r,
             );
             if (status !== "aprobada") return { ...s, reservationRequests };
             const products = s.products.map((p) =>
-              p.id === req.product_id ? { ...p, status: "reservado" as const } : p
+              p.id === req.product_id ? { ...p, status: "reservado" as const } : p,
             );
             return { ...s, reservationRequests, products };
           },
@@ -489,15 +496,15 @@ export function DataProvider({ children }: { children: ReactNode }) {
             resource: "stock",
             resource_id: id,
             meta: note ?? null,
-          }
+          },
         );
       },
 
       updateCompany: (patch) =>
-        withAudit(
-          (s) => ({ ...s, company: { ...s.company, ...patch } }),
-          { action: "update", resource: "company" }
-        ),
+        withAudit((s) => ({ ...s, company: { ...s.company, ...patch } }), {
+          action: "update",
+          resource: "company",
+        }),
 
       createLead: (input) => {
         const now = nowIso();
@@ -546,7 +553,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
           updated_at: now,
         };
         const assigneeName = assignedId
-          ? state.users.find((u) => u.id === assignedId)?.name ?? null
+          ? (state.users.find((u) => u.id === assignedId)?.name ?? null)
           : null;
         withAudit(
           (s) => {
@@ -563,7 +570,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             meta: assigneeName
               ? `${lead.name} → ${assigneeName} (${assignReason ?? "auto"})`
               : lead.name,
-          }
+          },
         );
         // Disparar conversión si el lead vino de una campaña rastreable.
         const fromCampaign = Boolean(lead.utm_source || lead.gclid || lead.fbclid);
@@ -596,24 +603,32 @@ export function DataProvider({ children }: { children: ReactNode }) {
                 ...l,
                 ...patch,
                 remarketing_since: enteringRemarketing
-                  ? patch.remarketing_since ?? now
-                  : patch.remarketing_since ?? l.remarketing_since ?? null,
+                  ? (patch.remarketing_since ?? now)
+                  : (patch.remarketing_since ?? l.remarketing_since ?? null),
                 remarketing_reason: enteringRemarketing
-                  ? patch.remarketing_reason ?? "Derivado manualmente"
-                  : patch.remarketing_reason ?? l.remarketing_reason ?? null,
+                  ? (patch.remarketing_reason ?? "Derivado manualmente")
+                  : (patch.remarketing_reason ?? l.remarketing_reason ?? null),
                 updated_at: now,
-                last_management_at: bumpMgmt ? now : patch.last_management_at ?? l.last_management_at,
+                last_management_at: bumpMgmt
+                  ? now
+                  : (patch.last_management_at ?? l.last_management_at),
               };
             }),
           }),
-          { action: "update", resource: "lead", resource_id: id, meta: Object.keys(patch).join(", ") }
+          {
+            action: "update",
+            resource: "lead",
+            resource_id: id,
+            meta: Object.keys(patch).join(", "),
+          },
         ),
 
       deleteLead: (id) =>
-        withAudit(
-          (s) => ({ ...s, leads: s.leads.filter((l) => l.id !== id) }),
-          { action: "delete", resource: "lead", resource_id: id }
-        ),
+        withAudit((s) => ({ ...s, leads: s.leads.filter((l) => l.id !== id) }), {
+          action: "delete",
+          resource: "lead",
+          resource_id: id,
+        }),
 
       addInteraction: (input) =>
         withAudit(
@@ -621,18 +636,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
             const now = nowIso();
             return {
               ...s,
-              interactions: [
-                { ...input, id: uid("int"), created_at: now },
-                ...s.interactions,
-              ],
+              interactions: [{ ...input, id: uid("int"), created_at: now }, ...s.interactions],
               leads: s.leads.map((l) =>
-                l.id === input.lead_id
-                  ? { ...l, updated_at: now, last_management_at: now }
-                  : l
+                l.id === input.lead_id ? { ...l, updated_at: now, last_management_at: now } : l,
               ),
             };
           },
-          { action: "create", resource: "interaction", resource_id: input.lead_id, meta: input.type }
+          {
+            action: "create",
+            resource: "interaction",
+            resource_id: input.lead_id,
+            meta: input.type,
+          },
         ),
 
       createClient: (input) => {
@@ -647,10 +662,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
           notes: input.notes ?? null,
           created_at: nowIso(),
         };
-        withAudit(
-          (s) => ({ ...s, clients: [client, ...s.clients] }),
-          { action: "create", resource: "client", resource_id: client.id, meta: client.name }
-        );
+        withAudit((s) => ({ ...s, clients: [client, ...s.clients] }), {
+          action: "create",
+          resource: "client",
+          resource_id: client.id,
+          meta: client.name,
+        });
         return client;
       },
 
@@ -660,7 +677,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             ...s,
             clients: s.clients.map((c) => (c.id === id ? { ...c, ...patch } : c)),
           }),
-          { action: "update", resource: "client", resource_id: id }
+          { action: "update", resource: "client", resource_id: id },
         ),
 
       createProduct: (input) => {
@@ -686,10 +703,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
           internal_notes: input.internal_notes ?? null,
           created_at: nowIso(),
         };
-        withAudit(
-          (s) => ({ ...s, products: [product, ...s.products] }),
-          { action: "create", resource: "product", resource_id: product.id, meta: product.name }
-        );
+        withAudit((s) => ({ ...s, products: [product, ...s.products] }), {
+          action: "create",
+          resource: "product",
+          resource_id: product.id,
+          meta: product.name,
+        });
         return product;
       },
 
@@ -699,7 +718,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             ...s,
             products: s.products.map((p) => (p.id === id ? { ...p, ...patch } : p)),
           }),
-          { action: "update", resource: "product", resource_id: id }
+          { action: "update", resource: "product", resource_id: id },
         ),
 
       createTask: (input) => {
@@ -717,10 +736,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
           status: input.status ?? "pendiente",
           created_at: nowIso(),
         };
-        withAudit(
-          (s) => ({ ...s, tasks: [task, ...s.tasks] }),
-          { action: "create", resource: "task", resource_id: task.id, meta: task.title }
-        );
+        withAudit((s) => ({ ...s, tasks: [task, ...s.tasks] }), {
+          action: "create",
+          resource: "task",
+          resource_id: task.id,
+          meta: task.title,
+        });
         syncTaskToGCal(task);
         return task;
       },
@@ -736,7 +757,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             });
             return { ...s, tasks };
           },
-          { action: "update", resource: "task", resource_id: id }
+          { action: "update", resource: "task", resource_id: id },
         );
         if (updated) syncTaskToGCal(updated);
       },
@@ -748,17 +769,18 @@ export function DataProvider({ children }: { children: ReactNode }) {
             tasks: s.tasks.map((t) =>
               t.id === id
                 ? { ...t, status: t.status === "completada" ? "pendiente" : "completada" }
-                : t
+                : t,
             ),
           }),
-          { action: "toggle", resource: "task", resource_id: id }
+          { action: "toggle", resource: "task", resource_id: id },
         ),
 
       deleteTask: (id) => {
-        withAudit(
-          (s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== id) }),
-          { action: "delete", resource: "task", resource_id: id }
-        );
+        withAudit((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== id) }), {
+          action: "delete",
+          resource: "task",
+          resource_id: id,
+        });
         removeTaskFromGCal(id);
       },
 
@@ -768,7 +790,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
             ...s,
             users: s.users.map((u) => (u.id === id ? { ...u, ...patch } : u)),
           }),
-          { action: "update", resource: "user", resource_id: id, meta: Object.keys(patch).join(", ") }
+          {
+            action: "update",
+            resource: "user",
+            resource_id: id,
+            meta: Object.keys(patch).join(", "),
+          },
         ),
 
       registerUser: (input) => {
@@ -785,10 +812,12 @@ export function DataProvider({ children }: { children: ReactNode }) {
           password_hash: input.password_hash,
           created_at: nowIso(),
         };
-        withAudit(
-          (s) => ({ ...s, users: [...s.users, user] }),
-          { action: "register", resource: "user", resource_id: user.id, meta: user.email }
-        );
+        withAudit((s) => ({ ...s, users: [...s.users, user] }), {
+          action: "register",
+          resource: "user",
+          resource_id: user.id,
+          meta: user.email,
+        });
         return user;
       },
 
@@ -813,10 +842,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
           status: input.status ?? "borrador",
           created_at: nowIso(),
         };
-        withAudit(
-          (s) => ({ ...s, quotes: [quote, ...s.quotes] }),
-          { action: "create", resource: "quote", resource_id: quote.id }
-        );
+        withAudit((s) => ({ ...s, quotes: [quote, ...s.quotes] }), {
+          action: "create",
+          resource: "quote",
+          resource_id: quote.id,
+        });
         return quote;
       },
 
@@ -826,7 +856,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
             ...s,
             quotes: s.quotes.map((q) => (q.id === id ? { ...q, ...patch } : q)),
           }),
-          { action: "update", resource: "quote", resource_id: id }
+          { action: "update", resource: "quote", resource_id: id },
         ),
 
       createSimulation: (input) => {
@@ -877,7 +907,7 @@ export function DataProvider({ children }: { children: ReactNode }) {
         setState((s) => ({
           ...s,
           automationRules: s.automationRules.map((r) =>
-            r.id === id ? { ...r, active: !r.active } : r
+            r.id === id ? { ...r, active: !r.active } : r,
           ),
         })),
 
@@ -887,10 +917,11 @@ export function DataProvider({ children }: { children: ReactNode }) {
       },
 
       updateDistributionConfig: (patch) =>
-        withAudit(
-          (s) => ({ ...s, leadDistribution: { ...s.leadDistribution, ...patch } }),
-          { action: "update", resource: "lead_distribution", meta: patch.mode ?? null }
-        ),
+        withAudit((s) => ({ ...s, leadDistribution: { ...s.leadDistribution, ...patch } }), {
+          action: "update",
+          resource: "lead_distribution",
+          meta: patch.mode ?? null,
+        }),
     };
   }, [state, pushAudit]);
 
