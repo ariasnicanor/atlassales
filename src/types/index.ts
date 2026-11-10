@@ -177,6 +177,7 @@ export interface Product {
   description?: string | null;
   images: string[]; // galería de fotos
   image_url?: string | null; // legacy / portada
+  image_credit?: string | null; // autor/licencia de la foto (fotos con licencia libre)
   internal_notes?: string | null;
   created_at: ISODate;
 }

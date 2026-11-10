@@ -61,7 +61,7 @@ function removeTaskFromGCal(taskId: string) {
   }
 }
 
-const STORAGE_KEY = "atlas-sales-os:data:v4";
+const STORAGE_KEY = "atlas-sales-os:data:v5";
 
 function loadState(): DataState {
   if (typeof window === "undefined") return buildSeedState();

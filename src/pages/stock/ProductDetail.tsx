@@ -111,6 +111,9 @@ export default function ProductDetail() {
           ) : (
             <ProductImage src={null} alt={product.name} className="h-64 w-full sm:h-80" />
           )}
+          {gallery.length > 0 && product.image_credit && (
+            <p className="px-5 pt-2 text-[11px] text-muted-foreground">Foto: {product.image_credit}</p>
+          )}
           <CardContent className="space-y-5 p-5">
             <div>
               {product.promo_price ? (
@@ -205,7 +208,12 @@ export default function ProductDetail() {
                     disabled={photosDraft === null}
                     onClick={() => {
                       const images = parseImageList(draft);
-                      updateProduct(product.id, { images, image_url: images[0] ?? null });
+                      updateProduct(product.id, {
+                        images,
+                        image_url: images[0] ?? null,
+                        // Fotos propias: el crédito de la foto anterior ya no aplica.
+                        image_credit: null,
+                      });
                       setPhotosDraft(null);
                       toast(images.length ? `${images.length} foto(s) guardadas` : "Fotos eliminadas");
                     }}

@@ -13,8 +13,9 @@ import type {
   WhatsAppProvider,
 } from "./types";
 
-// v3: conversaciones demo realistas. Subir la versión descarta el estado viejo.
-const STORAGE_KEY = "atlas-sales-os:wa-chats:v3";
+// v4: conversaciones demo con el stock de autos por gama. Subir la versión
+// descarta el estado viejo (los chats nombran productos del stock).
+const STORAGE_KEY = "atlas-sales-os:wa-chats:v4";
 
 interface Persisted {
   chats: WaChat[];
