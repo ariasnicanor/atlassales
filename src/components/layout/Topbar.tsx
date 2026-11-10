@@ -9,12 +9,17 @@ import { useSession } from "@/context/session";
 import { useData } from "@/data/store";
 import { DATA_MODE } from "@/lib/supabase/client";
 import { roleLabel } from "@/lib/permissions";
+import { isOwnerAccount } from "@/lib/owner-accounts";
 import { CreateMenu } from "./CreateMenu";
 import { NotificationsBell } from "./NotificationsBell";
 
 export function Topbar() {
   const { currentUser, logout, theme, toggleTheme, loginAs } = useSession();
   const { users, company, resetDemo } = useData();
+  // Desde un perfil demo no se puede saltar a las cuentas de los dueños.
+  const switchableUsers = isOwnerAccount(currentUser)
+    ? users
+    : users.filter((u) => !isOwnerAccount(u));
 
   return (
     <header className="sticky top-0 z-30 flex h-16 w-full items-center gap-2 overflow-hidden border-b bg-background/95 px-4 backdrop-blur">
@@ -75,7 +80,7 @@ export function Topbar() {
           className="hidden w-44 md:block"
           aria-label="Cambiar usuario (demo)"
         >
-          {users.map((u) => (
+          {switchableUsers.map((u) => (
             <option key={u.id} value={u.id}>
               {u.name} · {roleLabel(u.role)}
             </option>

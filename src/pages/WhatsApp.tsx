@@ -40,89 +40,233 @@ import { fillTemplate } from "@/lib/contact";
 import type { Lead, LeadStatus } from "@/types";
 import {
   useWhatsApp,
+  usesRealWhatsApp,
+  resolveProviderId,
   normalizePhone,
+  type WaProviderId,
   type WaChat,
   type WaMessage,
   type WaProviderStatus,
   type WaSeed,
 } from "@/lib/whatsapp";
 
-/** Genera las semillas del proveedor MOCK desde los leads con teléfono + números desconocidos. */
+// ── Conversaciones del modo demo ─────────────────────────────
+// Cada guion es una etapa distinta de la venta. `ago` = minutos atrás.
+type SeedLine = { from: "them" | "me"; text: string; ago: number; status?: WaMessage["status"] };
+type SeedScript = { unread?: number; lines: (name: string, product: string) => SeedLine[] };
+
+const HOUR = 60;
+const DAY = 24 * HOUR;
+
+const SEED_SCRIPTS: SeedScript[] = [
+  {
+    // Consulta nueva, financiación
+    unread: 2,
+    lines: (n, p) => [
+      { from: "them", text: `Hola! Vi el ${p} en Instagram. ¿Sigue disponible?`, ago: 95 },
+      {
+        from: "me",
+        text: `¡Hola ${n}! Sí, lo tenemos. ¿Lo buscás de contado o financiado?`,
+        ago: 88,
+      },
+      { from: "them", text: "Financiado. ¿Qué anticipo hace falta?", ago: 12 },
+      { from: "them", text: "¿Y en cuántas cuotas se puede?", ago: 11 },
+    ],
+  },
+  {
+    // Usado como parte de pago
+    unread: 1,
+    lines: (n, p) => [
+      {
+        from: "them",
+        text: `Buenas, consulto por el ${p}. ¿Toman usado como parte de pago?`,
+        ago: 3 * HOUR,
+      },
+      {
+        from: "me",
+        text: `Hola ${n}, sí. Pasame marca, modelo, año y kilometraje y te hago una tasación estimada.`,
+        ago: 3 * HOUR - 10,
+      },
+      { from: "them", text: "Gol Trend 2016, 98.000 km. Está impecable", ago: 34 },
+    ],
+  },
+  {
+    // Visita agendada
+    lines: (n, p) => [
+      { from: "them", text: `Hola, ¿puedo pasar el sábado a ver el ${p}?`, ago: 5 * HOUR },
+      {
+        from: "me",
+        text: `¡Claro ${n}! El sábado abrimos de 9 a 13. ¿Te agendo a las 10:30?`,
+        ago: 5 * HOUR - 6,
+      },
+      { from: "them", text: "Perfecto, a las 10:30 voy", ago: 5 * HOUR - 20 },
+      {
+        from: "me",
+        text: "Listo, te espero. Cualquier cosa escribime por acá 👍",
+        ago: 5 * HOUR - 22,
+      },
+    ],
+  },
+  {
+    // Cotización enviada, pide descuento
+    unread: 1,
+    lines: (n, p) => [
+      {
+        from: "me",
+        text: `${n}, te paso la cotización del ${p} con las opciones de financiación que hablamos.`,
+        ago: DAY + 2 * HOUR,
+      },
+      { from: "them", text: "¡Gracias! Lo hablo en casa y te confirmo", ago: DAY + HOUR },
+      { from: "them", text: "¿El precio de contado tiene algún descuento?", ago: 55 },
+    ],
+  },
+  {
+    // Seña / reserva
+    lines: (n, p) => [
+      {
+        from: "them",
+        text: "Decidimos avanzar 🙌 ¿Cuánto tengo que dejar de seña?",
+        ago: 2 * HOUR,
+      },
+      {
+        from: "me",
+        text: `¡Excelente, ${n}! Con el 10% te reservamos el ${p}. Te mando los datos para transferir.`,
+        ago: 2 * HOUR - 5,
+      },
+      { from: "them", text: "Ya transferí, te mando el comprobante", ago: 70 },
+      { from: "me", text: "Recibido ✅ Queda reservado a tu nombre.", ago: 64 },
+    ],
+  },
+  {
+    // Lead que se enfrió (candidato a remarketing)
+    lines: (n, p) => [
+      {
+        from: "me",
+        text: `Hola ${n}, ¿pudiste ver la propuesta del ${p}? Si querés la ajustamos.`,
+        ago: 3 * DAY,
+        status: "delivered",
+      },
+    ],
+  },
+  {
+    // Post-venta: entrega
+    lines: (_n, p) => [
+      {
+        from: "them",
+        text: `Hola! ¿Para cuándo estaría la entrega del ${p}?`,
+        ago: DAY + 5 * HOUR,
+      },
+      {
+        from: "me",
+        text: "¡Hola! Estamos terminando la documentación. Calculamos el jueves.",
+        ago: DAY + 4 * HOUR,
+      },
+      { from: "them", text: "Genial, ¡gracias!", ago: DAY + 4 * HOUR - 10 },
+    ],
+  },
+  {
+    // Ficha técnica / uso
+    unread: 1,
+    lines: (n, p) => [
+      { from: "them", text: `Hola, ¿me pasarías la ficha técnica del ${p}?`, ago: 4 * HOUR },
+      {
+        from: "me",
+        text: `Sí ${n}, ahí te la mando. ¿Para qué uso lo necesitás?`,
+        ago: 4 * HOUR - 8,
+      },
+      { from: "them", text: "Para trabajo, lo usaríamos todos los días", ago: 2 * HOUR + 15 },
+    ],
+  },
+];
+
+/** Números que escribieron y todavía no son lead (para mostrar "crear lead desde el chat"). */
+const SEED_UNKNOWNS: Array<{ phone: string; name: string; text: string; ago: number }> = [
+  {
+    phone: "5491133449988",
+    name: "+54 9 11 3344 9988",
+    text: "Buenas, vi el aviso en Mercado Libre. ¿Me pasan más fotos?",
+    ago: 8,
+  },
+  {
+    phone: "5491144556677",
+    name: "+54 9 11 4455 6677",
+    text: "Hola, me pasó tu contacto un amigo que les compró. ¿Atienden los domingos?",
+    ago: 40,
+  },
+];
+
+/** Genera las semillas del proveedor MOCK desde los leads con teléfono + números sin lead. */
 function buildSeed(leads: Lead[]): WaSeed {
   const chats: WaChat[] = [];
   const messages: Record<string, WaMessage[]> = {};
-  const ago = (mins: number) => new Date(Date.now() - mins * 60_000).toISOString();
+  const at = (mins: number) => new Date(Date.now() - mins * 60_000).toISOString();
 
-  leads
-    .filter((l) => l.phone)
-    .slice(0, 10)
-    .forEach((l, idx) => {
-      const phone = normalizePhone(l.phone);
-      if (!phone || messages[phone]) return;
-      const ms: WaMessage[] = [
-        {
-          id: `m-${l.id}-1`,
-          chatId: phone,
-          from: "them",
-          text: `Hola, vi ${l.product_interest ?? "un producto"} en su web. ¿Sigue disponible?`,
-          at: ago(120 + idx * 17),
-        },
-        {
-          id: `m-${l.id}-2`,
-          chatId: phone,
-          from: "me",
-          text: "¡Hola! Sí, todavía tenemos disponibilidad. ¿Querés que te pase info?",
-          at: ago(90 + idx * 17),
-          status: "read",
-        },
-        {
-          id: `m-${l.id}-3`,
-          chatId: phone,
-          from: "them",
-          text: "Dale, mandame precio final y opciones de financiación.",
-          at: ago(20 + idx * 3),
-        },
-      ];
-      messages[phone] = ms;
-      chats.push({
-        id: phone,
-        phone,
-        name: l.name,
-        lastMessage: ms[ms.length - 1].text,
-        lastAt: ms[ms.length - 1].at,
-      });
+  const withPhone = leads.filter((l) => normalizePhone(l.phone));
+  SEED_SCRIPTS.forEach((script, idx) => {
+    const lead = withPhone[idx];
+    if (!lead) return;
+    const phone = normalizePhone(lead.phone);
+    if (messages[phone]) return;
+    const firstName = lead.name.split(" ")[0];
+    const lines = script.lines(firstName, lead.product_interest ?? "producto");
+    const ms: WaMessage[] = lines.map((line, k) => ({
+      id: `m-${lead.id}-${k}`,
+      chatId: phone,
+      from: line.from,
+      text: line.text,
+      at: at(line.ago),
+      status: line.from === "me" ? (line.status ?? "read") : undefined,
+    }));
+    const last = ms[ms.length - 1];
+    messages[phone] = ms;
+    chats.push({
+      id: phone,
+      phone,
+      name: lead.name,
+      lastMessage: last.text,
+      lastAt: last.at,
+      unread: script.unread ?? 0,
     });
+  });
 
-  // Dos conversaciones de números "desconocidos" (sin lead vinculado).
-  const unknowns: Array<{ phone: string; name: string; text: string; mins: number }> = [
-    {
-      phone: "5491133449988",
-      name: "+54 9 11 3344 9988",
-      text: "Buenas, vi el aviso de MercadoLibre. Me pasan más fotos?",
-      mins: 10,
-    },
-    {
-      phone: "5491144556677",
-      name: "+54 9 11 4455 6677",
-      text: "Hola, un conocido me dio su contacto. Quería preguntarles algo.",
-      mins: 42,
-    },
-  ];
-  for (const u of unknowns) {
-    const at = ago(u.mins);
-    messages[u.phone] = [{ id: `unk-${u.phone}`, chatId: u.phone, from: "them", text: u.text, at }];
-    chats.unshift({ id: u.phone, phone: u.phone, name: u.name, lastMessage: u.text, lastAt: at });
+  for (const u of SEED_UNKNOWNS) {
+    const when = at(u.ago);
+    messages[u.phone] = [
+      { id: `unk-${u.phone}`, chatId: u.phone, from: "them", text: u.text, at: when },
+    ];
+    chats.push({
+      id: u.phone,
+      phone: u.phone,
+      name: u.name,
+      lastMessage: u.text,
+      lastAt: when,
+      unread: 1,
+    });
   }
 
   return { chats, messages };
 }
 
-/** Agrega o actualiza un chat cuando entra/sale un mensaje. */
-function touchChats(chats: WaChat[], m: WaMessage, fallbackName?: string): WaChat[] {
+/**
+ * Agrega o actualiza un chat cuando entra/sale un mensaje.
+ * `bumpUnread` suma un no leído (entrante en un chat que no está abierto).
+ */
+function touchChats(
+  chats: WaChat[],
+  m: WaMessage,
+  fallbackName?: string,
+  bumpUnread = false,
+): WaChat[] {
   const idx = chats.findIndex((c) => c.id === m.chatId);
   if (idx >= 0) {
     const next = [...chats];
-    next[idx] = { ...next[idx], lastMessage: m.text, lastAt: m.at };
+    const prev = next[idx];
+    next[idx] = {
+      ...prev,
+      lastMessage: m.text,
+      lastAt: m.at,
+      unread: bumpUnread ? (prev.unread ?? 0) + 1 : prev.unread,
+    };
     return next;
   }
   return [
@@ -132,6 +276,7 @@ function touchChats(chats: WaChat[], m: WaMessage, fallbackName?: string): WaCha
       name: fallbackName ?? m.chatId,
       lastMessage: m.text,
       lastAt: m.at,
+      unread: bumpUnread ? 1 : 0,
     },
     ...chats,
   ];
@@ -140,7 +285,23 @@ function touchChats(chats: WaChat[], m: WaMessage, fallbackName?: string): WaCha
 /** Hora corta estilo WhatsApp (HH:MM). */
 function shortTime(at?: string | null) {
   if (!at) return "";
-  return new Date(at).toLocaleTimeString("es-AR", { hour: "2-digit", minute: "2-digit" });
+  return new Date(at).toLocaleTimeString("es-AR", {
+    hour: "2-digit",
+    minute: "2-digit",
+    hourCycle: "h23",
+  });
+}
+
+/** Fecha de la lista de chats, como WhatsApp: hoy "HH:MM", ayer "Ayer", antes "dd/mm". */
+function listTime(at?: string | null) {
+  if (!at) return "";
+  const d = new Date(at);
+  const startOfToday = new Date();
+  startOfToday.setHours(0, 0, 0, 0);
+  const diffDays = Math.ceil((startOfToday.getTime() - d.getTime()) / 86_400_000);
+  if (d >= startOfToday) return shortTime(at);
+  if (diffDays <= 1) return "Ayer";
+  return d.toLocaleDateString("es-AR", { day: "2-digit", month: "2-digit" });
 }
 
 /** Emojis frecuentes para el selector rápido. */
@@ -259,6 +420,16 @@ function WaAvatar({ name, size = 40 }: { name: string; size?: number }) {
 }
 
 export default function WhatsAppPage() {
+  const { currentUser } = useSession();
+  // Perfiles demo → conversaciones simuladas. Cuentas reales → proveedor
+  // configurado (Cloud API). La key rearma la bandeja si cambia el perfil.
+  const providerId: WaProviderId = usesRealWhatsApp(currentUser) ? resolveProviderId() : "mock";
+  return (
+    <WhatsAppInbox key={`${currentUser?.id ?? "anon"}:${providerId}`} providerId={providerId} />
+  );
+}
+
+function WhatsAppInbox({ providerId: forcedProviderId }: { providerId: WaProviderId }) {
   const { leads, products, templates, createLead, updateLead, addInteraction } = useData();
   const { currentUser } = useSession();
   const { toast } = useToast();
@@ -267,11 +438,24 @@ export default function WhatsAppPage() {
   // el proveedor mock consume la semilla una única vez y luego persiste su estado).
   // eslint-disable-next-line react-hooks/exhaustive-deps
   const seed = useMemo(() => buildSeed(leads), []);
-  const { provider, status, providerId } = useWhatsApp({ seed });
+  const { provider, status, providerId } = useWhatsApp({ seed }, forcedProviderId);
 
   const [chats, setChats] = useState<WaChat[]>([]);
   const [messagesByChat, setMessagesByChat] = useState<Record<string, WaMessage[]>>({});
   const [activePhone, setActivePhone] = useState<string | null>(null);
+  // Para el handler de entrantes: saber qué chat está abierto sin resuscribir.
+  const activePhoneRef = useRef<string | null>(null);
+  activePhoneRef.current = activePhone;
+
+  // Abrir un chat lo marca como leído.
+  useEffect(() => {
+    if (!activePhone) return;
+    setChats((prev) =>
+      prev.some((c) => c.id === activePhone && c.unread)
+        ? prev.map((c) => (c.id === activePhone ? { ...c, unread: 0 } : c))
+        : prev,
+    );
+  }, [activePhone]);
   const [draft, setDraft] = useState("");
   const [search, setSearch] = useState("");
   const [note, setNote] = useState("");
@@ -325,7 +509,8 @@ export default function WhatsAppPage() {
     if (!provider) return;
     const unsub = provider.onMessage((m) => {
       setMessagesByChat((prev) => ({ ...prev, [m.chatId]: [...(prev[m.chatId] ?? []), m] }));
-      setChats((prev) => touchChats(prev, m, leadByPhone.get(m.chatId)?.name));
+      const unseen = m.from === "them" && m.chatId !== activePhoneRef.current;
+      setChats((prev) => touchChats(prev, m, leadByPhone.get(m.chatId)?.name, unseen));
       // Registrar entrante como gestión si hay lead vinculado.
       if (m.from === "them" && currentUser) {
         const lead = leadByPhone.get(m.chatId);
@@ -562,6 +747,7 @@ export default function WhatsAppPage() {
             {filtered.map((c) => {
               const lead = leadByPhone.get(c.id);
               const label = lead?.name ?? c.name ?? c.phone;
+              const unread = activePhone === c.id ? 0 : (c.unread ?? 0);
               return (
                 <button
                   key={c.id}
@@ -579,22 +765,46 @@ export default function WhatsAppPage() {
                       <p className="truncate text-[15px] font-medium text-[#111b21] dark:text-[#e9edef]">
                         {label}
                       </p>
-                      <span className="shrink-0 text-[11px] text-[#667781] dark:text-[#8696a0]">
-                        {shortTime(c.lastAt)}
+                      <span
+                        className={cn(
+                          "shrink-0 text-[11px]",
+                          unread
+                            ? "font-medium text-[#1fa855] dark:text-[#00a884]"
+                            : "text-[#667781] dark:text-[#8696a0]",
+                        )}
+                      >
+                        {listTime(c.lastAt)}
                       </span>
                     </div>
                     <div className="flex items-center justify-between gap-2">
-                      <p className="truncate text-[13px] text-[#667781] dark:text-[#8696a0]">
+                      <p
+                        className={cn(
+                          "truncate text-[13px]",
+                          unread
+                            ? "font-medium text-[#111b21] dark:text-[#e9edef]"
+                            : "text-[#667781] dark:text-[#8696a0]",
+                        )}
+                      >
                         {c.lastMessage ?? "Sin mensajes"}
                       </p>
-                      {!lead && (
-                        <Badge
-                          variant="outline"
-                          className="shrink-0 border-[#008069]/30 text-[9px] text-[#008069] dark:text-[#00a884]"
-                        >
-                          Sin lead
-                        </Badge>
-                      )}
+                      <div className="flex shrink-0 items-center gap-1.5">
+                        {!lead && (
+                          <Badge
+                            variant="outline"
+                            className="border-[#008069]/30 text-[9px] text-[#008069] dark:text-[#00a884]"
+                          >
+                            Sin lead
+                          </Badge>
+                        )}
+                        {unread > 0 && (
+                          <span
+                            className="grid h-5 min-w-5 place-items-center rounded-full bg-[#25d366] px-1.5 text-[11px] font-semibold text-white dark:bg-[#00a884] dark:text-[#111b21]"
+                            aria-label={`${unread} mensajes sin leer`}
+                          >
+                            {unread}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </button>

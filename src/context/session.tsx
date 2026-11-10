@@ -10,6 +10,7 @@ import {
 import type { User, UserRole } from "@/types";
 import { useData } from "@/data/store";
 import { hashPassword } from "@/lib/auth";
+import { isOwnerAccount } from "@/lib/owner-accounts";
 
 const SESSION_KEY = "atlas-sales-os:session:v2";
 const THEME_KEY = "atlas-sales-os:theme:v1";
@@ -84,13 +85,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
 
   const loginAs = useCallback(
     (id: string) => {
+      const user = users.find((u) => u.id === id) ?? null;
+      // Atajo demo sin contraseña: no sirve para entrar a las cuentas de los
+      // dueños, salvo que ya estés en una de ellas.
+      if (isOwnerAccount(user) && !isOwnerAccount(currentUser)) return;
       setUserId(id);
       window.localStorage.setItem(SESSION_KEY, id);
-      const user = users.find((u) => u.id === id) ?? null;
       _setActor(user);
       if (user) logAudit({ action: "login", resource: "session", resource_id: user.id, meta: user.email + " (demo)" });
     },
-    [users, logAudit, _setActor]
+    [users, currentUser, logAudit, _setActor]
   );
 
   const register = useCallback(

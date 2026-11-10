@@ -8,6 +8,7 @@ import { OpenWaProvider } from "./openwa-provider";
 import { CloudApiProvider } from "./cloud-api-provider";
 
 export * from "./types";
+export { usesRealWhatsApp } from "./access";
 
 const PROVIDER_OVERRIDE_KEY = "atlas-sales-os:wa-provider";
 
@@ -69,11 +70,17 @@ export interface UseWhatsAppResult {
 
 /**
  * Hook que instancia el proveedor resuelto, lo inicializa y expone su estado.
- * Se recrea solo si cambia el `providerId`. Las semillas del mock se pasan por
- * `opts.seed` y se leen una única vez (el mock persiste su propio estado).
+ * `forcedId` fija el proveedor (ej. "mock" para los perfiles demo); si no, se
+ * usa `resolveProviderId()`. Se resuelve una vez por montaje: para cambiar de
+ * proveedor, remontar el componente con otra `key`. Las semillas del mock se
+ * pasan por `opts.seed` y se leen una única vez (el mock persiste su estado).
  */
-export function useWhatsApp(opts: WaProviderOptions = {}): UseWhatsAppResult {
-  const providerId = useMemo(() => resolveProviderId(), []);
+export function useWhatsApp(
+  opts: WaProviderOptions = {},
+  forcedId?: WaProviderId,
+): UseWhatsAppResult {
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const providerId = useMemo(() => forcedId ?? resolveProviderId(), []);
   const [status, setStatus] = useState<WaProviderStatus | null>(null);
   const providerRef = useRef<WhatsAppProvider | null>(null);
   // Congelar seed inicial: el mock la consume una sola vez.
